@@ -41,7 +41,7 @@ def main():
         model.parameters(), lr=lr, momentum=0.9, weight_decay=1e-6)
 
     scheduler = ReduceLROnPlateau(optimizer, patience=3, verbose=True)
-    criterion = nn.MSELoss()
+    criterion = nn.CrossEntropyLoss()
     model = model.to(device)
 
     train(model, train_loader, val_loader, epoch, "./save", device, criterion, scheduler, optimizer)
