@@ -2,11 +2,31 @@
 import torch
 import torch.nn as nn
 from torch.optim.lr_scheduler import _LRScheduler, ReduceLROnPlateau
+from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 from tqdm import tqdm
 import random
 import os
 import time
+
+import cv2
+def pred_to_keypoints(pred):
+    pred = pred[-1].detach().cpu()
+
+    lmx = torch.argmax(torch.max(pred, dim=2)[0], dim=2) * 4
+    lmy = torch.argmax(torch.max(pred, dim=3)[0], dim=2) * 4
+
+    landmark = torch.stack((lmx, lmy), dim=2)
+    return landmark
+
+def plot_keypoint(img_path, gd:list, pred:list=None):
+    im = cv2.imread(img_path)
+    if pred != None:
+        for (x, y) in gd:
+            cv2.circle(im, (x,y), radius=3, color=(255, 0, 0),thickness=-1)
+    for (x, y) in pred:
+        cv2.circle(im, (x,y), radius=3, color=(0, 0, 255),thickness=-1)
+    return im
 
 
 class Warmup_ReduceLROnPlateau(_LRScheduler):
@@ -51,6 +71,12 @@ def fixed_seed(myseed):
         torch.cuda.manual_seed_all(myseed)
         torch.cuda.manual_seed(myseed)
 
+def load_parameters(model, path):
+    print(f'Loading model parameters from {path}...')
+    param = torch.load(path)
+    model.load_state_dict(param)
+    print("End of loading !!!")
+
 
 def train(model, train_loader, val_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer):
     start_train = time.time()
@@ -58,7 +84,9 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
     overall_loss = []
     overall_val_loss = []
 
-
+    writer = SummaryWriter()
+    global_training_step = 0
+    global_validation_step = 0
     for epoch in range(epoch):
         print(f'epoch = {epoch}')
         # epcoch setting
@@ -69,6 +97,7 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
         # start training
         model.train()
         for batch_idx, (data, label) in enumerate(tqdm(train_loader)):
+            
             data = data.to(device)
             label = label.to(device)
 
@@ -84,6 +113,10 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
             optimizer.step()
 
             train_loss += loss.item()
+            writer.add_scalar(tag="Train_loss",
+                            scalar_value=float(loss), 
+                            global_step=global_training_step)
+            global_training_step += 1
             del loss
   
         train_loss = train_loss / len(train_loader.dataset)     
@@ -103,6 +136,10 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
                 for output in outputs:
                     loss += criterion(output, label)
                 val_loss += loss
+                writer.add_scalar(tag="Val_loss",
+                            scalar_value=float(loss), 
+                            global_step=global_validation_step)
+                global_validation_step += 1
                 
             val_loss /= len(val_loader.dataset)
             
@@ -124,3 +161,4 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
 
 
         torch.save(model.state_dict(), os.path.join(save_path, f'{epoch}.pt'))
+    writer.close()
