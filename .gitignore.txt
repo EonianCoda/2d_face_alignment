@@ -1,6 +1,0 @@
-__pycache__
-face-alignment-pytorch-master
-data
-*.pt
-save
-log
