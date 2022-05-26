@@ -10,14 +10,6 @@ import os
 import time
 
 import cv2
-def pred_to_keypoints(pred):
-    pred = pred[-1].detach().cpu()
-
-    lmx = torch.argmax(torch.max(pred, dim=2)[0], dim=2) * 4
-    lmy = torch.argmax(torch.max(pred, dim=3)[0], dim=2) * 4
-
-    landmark = torch.stack((lmx, lmy), dim=2)
-    return landmark
 
 def plot_keypoint(img_path, gd:list, pred:list=None):
     im = cv2.imread(img_path)

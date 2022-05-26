@@ -1,16 +1,20 @@
 import torch
 from torch.utils.data import Dataset
 from torchvision.transforms import transforms
-from PIL import Image
-import os
+
 import numpy as np
 from sklearn.model_selection import train_test_split
 from platform import python_version
+from PIL import Image
+import os
 
 
-def convert_label(origin_label:list):
+
+
+def process_label(origin_label:list):
     label = np.array(origin_label)
-    if (label >= 384).any():
+    # Wrong Label
+    if (label >= 384).any() or (label < 0).any():
         return False, None
     label = np.round(label * 0.25)
 
@@ -20,6 +24,8 @@ def convert_label(origin_label:list):
         idxs = np.lexsort((label[:,1], label[:,0]))
         for i in range(len(idxs) - 1):
             cur_idx, next_idx = idxs[i], idxs[i + 1]
+            # If there are keypoint having the same coordinate,
+            # then change one of the point's y.
             if (label[cur_idx] == label[next_idx]).all():
                 flag = False
                 same_count += 1
@@ -32,7 +38,9 @@ def convert_label(origin_label:list):
                 break
         if flag:
             break
-
+    # Wrong label
+    if (label >= 384).any() or (label < 0).any():
+        return False, None
     label = label.astype(np.int32)
     return True, label
 
@@ -61,6 +69,9 @@ def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8):
     return train_dataset, val_dataset
 
 def process_annot(annot_path:str):
+    """Read the annot file and process label(e.g. discard wrong label)
+    """
+
     # If python verions < 3.8.0, then use pickle5
     py_version = python_version()
     py_version = int(''.join(py_version.split('.')))
@@ -74,7 +85,7 @@ def process_annot(annot_path:str):
     valid_imgs = []
     valid_labels = []
     for img, label in zip(images, labels):
-        result = convert_label(label)
+        result = process_label(label)
         if result[0]:
             valid_imgs.append(img)
             valid_labels.append(result[1])

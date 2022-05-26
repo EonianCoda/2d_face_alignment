@@ -1,4 +1,3 @@
-from turtle import Turtle, forward
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -128,8 +127,15 @@ class FAN(nn.Module):
             if stack_idx != self.num_HG:
                 self.add_module(f"stack{stack_idx}_conv3", conv1x1(self.num_feats, self.num_feats))
                 self.add_module(f"stack{stack_idx}_shortcut", conv1x1(self.num_classes, self.num_feats))
+        self._weight_init()
+    def _weight_init(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
 
-            
     def forward(self, x):
         outputs = []
         # Base part
