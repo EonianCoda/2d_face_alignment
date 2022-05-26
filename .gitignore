@@ -2,6 +2,6 @@ __pycache__
 face-alignment-pytorch-master
 data
 save
-log
+runs
 *.ipynb
 *.pt
