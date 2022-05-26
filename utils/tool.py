@@ -76,7 +76,7 @@ def load_parameters(model, path):
     print("End of loading !!!")
 
 
-def train(model, train_loader, val_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, exp_name=""):
+def train(model, train_loader, val_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, exp_name="", only_save_best=False):
     start_train = time.time()
     
     overall_loss = []
@@ -191,11 +191,14 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
         print('*'*10)
         print('time = {:.4f} MIN {:.4f} SEC, total time = {:.4f} Min {:.4f} SEC '.format(elp_time // 60, elp_time % 60, (end_time-start_train) // 60, (end_time-start_train) % 60))
         print(f'training loss : {train_loss:.4f} ', )
+        print(f'training ground truth loss : {train_gt_loss:.4f} ', )
         print(f'val loss : {val_loss:.4f} ')
+        print(f'val ground truth loss : {val_gt_loss:.4f} ')
         print('========================\n')
 
         if val_gt_loss < best_val_gt_loss:
             best_val_gt_loss = val_gt_loss  
             torch.save(model.state_dict(), os.path.join(save_path, 'best.pt'))
-        torch.save(model.state_dict(), os.path.join(save_path, f'{epoch}.pt'))
+        if not only_save_best:
+            torch.save(model.state_dict(), os.path.join(save_path, f'{epoch}.pt'))
     writer.close()
