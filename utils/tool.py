@@ -76,13 +76,15 @@ def load_parameters(model, path):
     print("End of loading !!!")
 
 
-def train(model, train_loader, val_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer):
+def train(model, train_loader, val_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, exp_name=""):
     start_train = time.time()
     
     overall_loss = []
     overall_val_loss = []
-
-    writer = SummaryWriter()
+    if exp_name == "":
+        writer = SummaryWriter()
+    else:
+        writer = SummaryWriter("./runs/" + exp_name)
     global_training_step = 0
     global_validation_step = 0
     # Create directory for saving model

@@ -15,6 +15,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_HG', type=int, default=4)
     parser.add_argument('--use_image_ratio', type=float, default=1.0)
+    parser.add_argument('--exp_name', help="the name of the experiment", default="", type=str)
+
     # parser.add_argument('--batch_size', type=int, default='32')
     args = parser.parse_args()
     """ input argumnet """
@@ -26,6 +28,8 @@ def main():
     lr = cfg['lr']
     split_ratio = cfg['split_ratio']
     epoch = cfg['epoch']
+    """ Logging parameter"""
+    exp_name = args.exp_name
     # Setting
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     fixed_seed(seed)
@@ -45,7 +49,7 @@ def main():
     criterion = nn.CrossEntropyLoss()
     model = model.to(device)
 
-    train(model, train_loader, val_loader, epoch, "./save", device, criterion, scheduler, optimizer)
+    train(model, train_loader, val_loader, epoch, "./save", device, criterion, scheduler, optimizer, exp_name)
 
     
 
