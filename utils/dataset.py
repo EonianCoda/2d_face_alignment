@@ -84,13 +84,13 @@ def get_transform(data_type="train"):
     return transform
 
 
-def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8):
+def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0):
 
     images, labels, gt_labels = process_annot(annot_path)
     
 
     # Split train/val set
-    idxs = [i for i in range(images)]
+    idxs = [i for i in range(int(len(images) * use_image_ratio))]
     random.shuffle(idxs)
     train_idxs = idxs[:int(len(images)*train_size)]
     val_idxs = idxs[int(len(images)*train_size):]
@@ -104,6 +104,7 @@ def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8):
         val_images.append(images[i])
         val_labels.append(labels[i])
         val_gt_labels.append(gt_labels[i])
+
 
 
     train_dataset = FaceSynthetics(data_root, train_images, train_labels, train_gt_labels, get_transform('train'))

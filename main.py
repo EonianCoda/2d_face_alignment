@@ -14,7 +14,7 @@ import os
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_HG', type=int, default=4)
-    # parser.add_argument('--annot_path', type=str, default='./data/')
+    parser.add_argument('--use_image_ratio', type=float, default=1.0)
     # parser.add_argument('--batch_size', type=int, default='32')
     args = parser.parse_args()
     """ input argumnet """
@@ -31,7 +31,7 @@ def main():
     fixed_seed(seed)
 
     model = FAN(num_HG=args.num_HG)
-    train_set, val_set = get_train_val_dataset(os.path.join(data_root, 'train') , train_annot, train_size=split_ratio)
+    train_set, val_set = get_train_val_dataset(os.path.join(data_root, 'train') , train_annot, train_size=split_ratio, use_image_ratio=use_image_ratio)
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers= 2, pin_memory=True, drop_last=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers= 2, pin_memory=True, drop_last=True)
