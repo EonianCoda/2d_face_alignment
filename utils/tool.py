@@ -3,15 +3,19 @@ import torch
 import torch.nn as nn
 from torch.optim.lr_scheduler import _LRScheduler, ReduceLROnPlateau
 from torch.utils.tensorboard import SummaryWriter
+from utils.evaluation import heatmap_to_landmark, NME
 import numpy as np
 from tqdm import tqdm
 import random
 import os
 import time
-
 import cv2
 
-def plot_keypoint(img_path, gd:list, pred:list=None):
+def mkdir_if_exist(path:str):
+    if not os.path.isdir(path):
+        os.mkdir(path)
+
+def plot_keypoint(img_path:str, gd:list, pred:list=None):
     im = cv2.imread(img_path)
     if pred != None:
         for (x, y) in gd:
@@ -72,21 +76,25 @@ def load_parameters(model, path):
 
 def train(model, train_loader, val_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer):
     start_train = time.time()
-
+    
     overall_loss = []
     overall_val_loss = []
 
     writer = SummaryWriter()
     global_training_step = 0
     global_validation_step = 0
+    # Create directory for saving model
+    mkdir_if_exist("./save")
+
+    # Starting training
     for epoch in range(epoch):
         print(f'epoch = {epoch}')
         start_time = time.time()
         train_loss = 0.0
 
-        # start training
+        # Training part
         model.train()
-        for batch_idx, (data, label) in enumerate(tqdm(train_loader)):
+        for batch_idx, (data, label, gt_label) in enumerate(tqdm(train_loader)):
             
             data = data.to(device)
             label = label.to(device)
@@ -96,6 +104,7 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
             loss = 0
             for output in outputs:
                 loss += criterion(output, label)
+            
 
             optimizer.zero_grad()
             loss.backward()
@@ -106,6 +115,14 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
             writer.add_scalar(tag="Train_loss",
                             scalar_value=float(loss), 
                             global_step=global_training_step)
+            
+            # Calculate gt loss with groud truth label
+            pred_label = heatmap_to_landmark(output)
+            gt_loss =  NME(pred_label, gt_label)
+            writer.add_scalar(tag="Train_gt_loss",
+                            scalar_value=float(gt_loss), 
+                            global_step=global_training_step)
+
             global_training_step += 1
             del loss
   
@@ -116,7 +133,7 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
             model.eval()
             val_loss = 0
             
-            for batch_idx, (data, label) in enumerate(tqdm(val_loader)):
+            for batch_idx, (data, label, gt_label) in enumerate(tqdm(val_loader)):
                 data = data.to(device)
                 label = label.to(device)
 
@@ -129,6 +146,13 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
                 writer.add_scalar(tag="Val_loss",
                             scalar_value=float(loss), 
                             global_step=global_validation_step)
+
+                # Calculate gt loss with groud truth label
+                pred_label = heatmap_to_landmark(output)
+                gt_loss =  NME(pred_label, gt_label)
+                writer.add_scalar(tag="Val_gt_loss",
+                                scalar_value=float(gt_loss), 
+                                global_step=global_training_step)
                 global_validation_step += 1
                 
             val_loss /= len(val_loader.dataset)

@@ -49,8 +49,8 @@ def process_annot(annot_path:str):
 
     # If python verions < 3.8.0, then use pickle5
     py_version = python_version()
-    py_version = int(''.join(py_version.split('.')))
-    if py_version < 380:
+    py_version = int(''.join(py_version.split('.')[:2]))
+    if py_version < 38:
         import pickle5 as pickle
     else:
         import pickle
