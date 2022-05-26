@@ -7,7 +7,6 @@ def NME(pred, gt) -> float:
     if pred.dim() != gt.dim():
         raise ValueError("Prediction and ground truth should have same dimensions!")
 
-
     dist = np.sqrt(np.sum((pred - gt) ** 2, (-1,-2)))
     dist = np.mean()
     dist /= 384

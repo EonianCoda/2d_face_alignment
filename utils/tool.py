@@ -81,11 +81,9 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
     global_validation_step = 0
     for epoch in range(epoch):
         print(f'epoch = {epoch}')
-        # epcoch setting
         start_time = time.time()
         train_loss = 0.0
 
-        # training part
         # start training
         model.train()
         for batch_idx, (data, label) in enumerate(tqdm(train_loader)):
