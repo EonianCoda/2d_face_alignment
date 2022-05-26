@@ -15,6 +15,7 @@ def main():
     parser.add_argument('--model_path', type=str)
     parser.add_argument('--annot_path', type=str, default="./data/val_annot.pkl")
     parser.add_argument('--data_path', type=str, default="./data/val")
+    parser.add_argument('--plot_img', type=int, default=10)
     args = parser.parse_args()
 
     annot_path = args.annot_path
