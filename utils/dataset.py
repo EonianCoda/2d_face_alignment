@@ -1,8 +1,6 @@
-from operator import gt
 import torch
 from torch.utils.data import Dataset
-from torchvision.transforms import transforms
-
+from utils.transform import get_transform
 import numpy as np
 from platform import python_version
 from PIL import Image
@@ -10,11 +8,12 @@ import os
 import random
 
 
-def process_label(origin_label:list):
-    label = np.array(origin_label)
+def process_label(origin_label:np.ndarray):
     # Wrong Label
-    if (label >= 384).any() or (label < 0).any():
+    if (origin_label >= 384).any() or (origin_label < 0).any():
         return False, None
+
+    label = origin_label.copy()
     label = np.round(label * 0.25)
 
     same_count = 0
@@ -66,53 +65,46 @@ def process_annot(annot_path:str):
             valid_imgs.append(img)
             valid_labels.append(result[1])
             gt_labels.append(label)
-    return valid_imgs, valid_labels, gt_labels
+    
+    valid_labels = np.stack(valid_labels)
+    gt_labels = np.stack(gt_labels)
 
-def get_transform(data_type="train"):
-    means = [0.485, 0.456, 0.406]
-    stds = [0.229, 0.224, 0.225]
-    if data_type == "train":
-        transform = transforms.Compose([#transforms.RandomPerspective(distortion_scale=0.3),
-                                        transforms.ToTensor(),
-                                        #transforms.RandomHorizontalFlip(),
-                                        transforms.Normalize(means, stds),
-                                    ])
-    elif data_type == "test" or data_type == "val":
-        transform = transforms.Compose([transforms.ToTensor(),
-                                        transforms.Normalize(means, stds),
-                                    ])
-    return transform
+    return valid_imgs, valid_labels, gt_labels
 
 
 def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0):
-
+    """Get training set and valiating set
+    Args:
+        data_root: the data root for images
+        annot_path: thh path of the annotation file
+        train_size: the size ratio of train:val
+        use_image_ratio: how many images to use in training and validation
+    """
     images, labels, gt_labels = process_annot(annot_path)
     
 
     # Split train/val set
     idxs = [i for i in range(int(len(images) * use_image_ratio))]
     random.shuffle(idxs)
-    train_idxs = idxs[:int(len(idxs)*train_size)]
-    val_idxs = idxs[int(len(idxs)*train_size):]
-    train_images, train_labels, train_gt_labels = [], [], []
-    val_images, val_labels, val_gt_labels = [], [], []
-    for i in train_idxs:
-        train_images.append(images[i])
-        train_labels.append(labels[i])
-        train_gt_labels.append(gt_labels[i])
-    for i in val_idxs:
-        val_images.append(images[i])
-        val_labels.append(labels[i])
-        val_gt_labels.append(gt_labels[i])
 
+    # Training set
+    train_idxs = idxs[: int(len(idxs)*train_size)]
+    train_images = [images[i] for i in train_idxs]
+    train_labels = labels[train_idxs]
+    train_gt_labels = gt_labels[train_idxs]
 
+    # Validation set
+    val_idxs = idxs[int(len(idxs)*train_size): ]
+    val_images = [images[i] for i in val_idxs]
+    val_labels = labels[val_idxs]
+    val_gt_labels = gt_labels[val_idxs]
 
     train_dataset = FaceSynthetics(data_root, train_images, train_labels, train_gt_labels, get_transform('train'))
     val_dataset = FaceSynthetics(data_root, val_images, val_labels, val_gt_labels, get_transform('val'))
     return train_dataset, val_dataset
 
 class FaceSynthetics(Dataset):
-    def __init__(self, data_root:str, images:list, labels:list, gt_labels:list, transform=None, heatmap_size=96) -> None:
+    def __init__(self, data_root:str, images:list, labels:np.ndarray, gt_labels:np.ndarray, transform=None, heatmap_size=96) -> None:
         super(FaceSynthetics, self).__init__()
         self.data_root = data_root
         self.images = images
