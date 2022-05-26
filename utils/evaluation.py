@@ -2,13 +2,16 @@ import torch
 import numpy as np
 
 def NME(pred, gt) -> float:
-    pred = np.array(pred)
+    if isinstance(pred, torch.Tensor):
+        pred = pred.numpy()
+    else:
+        pred = np.array(pred)
     gt = np.array(gt)
-    if pred.dim() != gt.dim():
+    if pred.ndim != gt.ndim:
         raise ValueError("Prediction and ground truth should have same dimensions!")
 
     dist = np.sqrt(np.sum((pred - gt) ** 2, (-1,-2)))
-    dist = np.mean()
+    dist = np.mean(dist)
     dist /= 384
     return float(dist)
 

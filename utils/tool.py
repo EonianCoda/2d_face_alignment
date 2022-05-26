@@ -85,13 +85,13 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
     global_validation_step = 0
     # Create directory for saving model
     mkdir_if_exist("./save")
-
+    best_val_gt_loss = 999
     # Starting training
     for epoch in range(epoch):
         print(f'epoch = {epoch}')
         start_time = time.time()
         train_loss = 0.0
-
+        train_gt_loss = 0.0
         # Training part
         model.train()
         for batch_idx, (data, label, gt_label) in enumerate(tqdm(train_loader)):
@@ -122,17 +122,26 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
             writer.add_scalar(tag="Train_gt_loss",
                             scalar_value=float(gt_loss), 
                             global_step=global_training_step)
-
+            train_gt_loss += gt_loss
             global_training_step += 1
             del loss
   
-        train_loss = train_loss / len(train_loader.dataset)     
+        train_loss /= len(train_loader.dataset)
+        train_gt_loss /= len(train_loader.dataset)
+
+        writer.add_scalar(tag="Train_epoch_gt_loss",
+                        scalar_value=float(train_gt_loss), 
+                        global_step=epoch)
+
+        writer.add_scalar(tag="Train_epoch_loss",
+                        scalar_value=float(train_loss), 
+                        global_step=epoch)
         overall_loss.append(float(train_loss))
         # validation part 
         with torch.no_grad():
             model.eval()
-            val_loss = 0
-            
+            val_loss = 0.0
+            val_gt_loss = 0.0
             for batch_idx, (data, label, gt_label) in enumerate(tqdm(val_loader)):
                 data = data.to(device)
                 label = label.to(device)
@@ -153,10 +162,18 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
                 writer.add_scalar(tag="Val_gt_loss",
                                 scalar_value=float(gt_loss), 
                                 global_step=global_training_step)
+                val_gt_loss += gt_loss
                 global_validation_step += 1
-                
-            val_loss /= len(val_loader.dataset)
             
+            val_loss /= len(val_loader.dataset)
+            val_gt_loss /= len(val_loader.dataset)
+            writer.add_scalar(tag="Val_epoch_gt_loss",
+                scalar_value=float(val_gt_loss), 
+                global_step=epoch)
+
+            writer.add_scalar(tag="Val_epoch_loss",
+                            scalar_value=float(val_loss), 
+                            global_step=epoch)
             overall_val_loss.append(float(val_loss))
 
         # Scheduler
@@ -173,6 +190,8 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
         print(f'val loss : {val_loss:.4f} ')
         print('========================\n')
 
-
+        if val_gt_loss < best_val_gt_loss:
+            best_val_gt_loss = val_gt_loss  
+            torch.save(model.state_dict(), os.path.join(save_path, 'best.pt'))
         torch.save(model.state_dict(), os.path.join(save_path, f'{epoch}.pt'))
     writer.close()

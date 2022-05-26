@@ -116,7 +116,7 @@ class FaceSynthetics(Dataset):
         self.data_root = data_root
         self.images = images
         self.labels= labels
-        self.gt_labels = gt_labels
+        self.gt_labels = torch.tensor(gt_labels)
         self.transform = transform 
         self.heatmap_size = heatmap_size
         self.num_classes = len(self.labels[0])
