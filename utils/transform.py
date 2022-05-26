@@ -1,3 +1,4 @@
+import torch
 from torchvision.transforms import transforms
 import random
 import numpy as np
@@ -13,27 +14,27 @@ class Transform(object):
         stds = [0.229, 0.224, 0.225]
         self.normalize = transforms.Normalize(means, stds)
 
-    def __call__(self, img, label=None, gt_label=None):
+    def __call__(self, img, label, gt_label):
         img = transforms.ToTensor()(img)
 
         # Random flip
         if self.is_train and random.random() > self.flip_x:
-            if label == None or gt_label == None:
-                raise ValueError("Label or groud thruth label shouldn't be None!")
+            # if label == None or gt_label == None:
+            #     raise ValueError("Label or groud thruth label shouldn't be None!")
             img = transforms.RandomHorizontalFlip(1.0)(img)
-            label = np.array([95, 95]) - label
-            gt_label = np.array([383, 383]) - gt_label
+            label = torch.tensor([95, 95]) - label
+            gt_label = torch.tensor([383, 383]) - gt_label
         # Random noise
         if self.is_train and random.random() > self.random_noise:
             noise_num = int(random.random() * 0.1 * (147456))
             for _ in range(noise_num):
                 prob = random.random()
-                pos_x = 383 * random.random()
-                pos_y = 383 * random.random()
+                pos_x = int(383 * random.random())
+                pos_y = int(383 * random.random())
                 if prob > 0.5:
-                    img[pos_y, pos_x] = 0
+                    img[:, pos_y, pos_x] = 0
                 else:
-                    img[pos_y, pos_x] = 255
+                    img[:, pos_y, pos_x] = 255
         img = self.normalize(img)
 
         return img, label, gt_label

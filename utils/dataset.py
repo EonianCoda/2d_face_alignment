@@ -108,7 +108,7 @@ class FaceSynthetics(Dataset):
         super(FaceSynthetics, self).__init__()
         self.data_root = data_root
         self.images = images
-        self.labels= labels
+        self.labels= torch.tensor(labels)
         self.gt_labels = torch.tensor(gt_labels)
         self.transform = transform 
         self.heatmap_size = heatmap_size
@@ -127,8 +127,7 @@ class FaceSynthetics(Dataset):
         # Read imagee
         img_path = os.path.join(self.data_root, self.images[idx])
         im = Image.open(img_path)
-        im = self.transform(im)
+        im, label, gt_label = self.transform(im, self.labels[idx], self.gt_labels[idx])
         # training label
         label = self.gen_heatmap(self.labels[idx])
-        gt_label = self.gt_labels[idx]
         return im, label, gt_label
