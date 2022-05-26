@@ -92,8 +92,8 @@ def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_ima
     # Split train/val set
     idxs = [i for i in range(int(len(images) * use_image_ratio))]
     random.shuffle(idxs)
-    train_idxs = idxs[:int(len(images)*train_size)]
-    val_idxs = idxs[int(len(images)*train_size):]
+    train_idxs = idxs[:int(len(idxs)*train_size)]
+    val_idxs = idxs[int(len(idxs)*train_size):]
     train_images, train_labels, train_gt_labels = [], [], []
     val_images, val_labels, val_gt_labels = [], [], []
     for i in train_idxs:

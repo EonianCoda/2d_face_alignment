@@ -10,7 +10,7 @@ import random
 import os
 import time
 import cv2
-
+import torch
 def mkdir_if_exist(path:str):
     if not os.path.isdir(path):
         os.mkdir(path)
@@ -18,6 +18,8 @@ def mkdir_if_exist(path:str):
 def plot_keypoint(img_path:str, gd:list, pred:list=None):
     im = cv2.imread(img_path)
     if pred != None:
+        if isinstance(gd, torch.Tensor):
+            gd = gd.long()
         for (x, y) in gd:
             cv2.circle(im, (x,y), radius=3, color=(255, 0, 0),thickness=-1)
     for (x, y) in pred:
@@ -117,7 +119,7 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
                             global_step=global_training_step)
             
             # Calculate gt loss with groud truth label
-            pred_label = heatmap_to_landmark(output)
+            pred_label = heatmap_to_landmark(outputs)
             gt_loss =  NME(pred_label, gt_label)
             writer.add_scalar(tag="Train_gt_loss",
                             scalar_value=float(gt_loss), 
@@ -157,7 +159,7 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
                             global_step=global_validation_step)
 
                 # Calculate gt loss with groud truth label
-                pred_label = heatmap_to_landmark(output)
+                pred_label = heatmap_to_landmark(outputs)
                 gt_loss =  NME(pred_label, gt_label)
                 writer.add_scalar(tag="Val_gt_loss",
                                 scalar_value=float(gt_loss), 
