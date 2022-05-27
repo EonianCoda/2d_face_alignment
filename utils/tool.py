@@ -10,7 +10,6 @@ import random
 import os
 import time
 import cv2
-import torch
 def mkdir_if_exist(path:str):
     if not os.path.isdir(path):
         os.mkdir(path)
@@ -76,7 +75,28 @@ def load_parameters(model, path):
     print("End of loading !!!")
 
 
-def train(model, train_loader, val_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, exp_name="", only_save_best=False):
+def val(model, test_loader, device):
+    print("Starting Validation....")
+    
+    
+    total_NME_loss = 0
+    # criterion = nn.CrossEntropyLoss()
+    for batch_idx, (data, label, gt_label) in enumerate(tqdm(test_loader)):
+        with torch.no_grad():
+            data = data.to(device)
+            # label = label.to(device)
+            outputs = model(data)
+            # loss = 0
+            # for output in outputs:
+            #     loss += criterion(output, label)
+            pred = heatmap_to_landmark(outputs)
+            pred_loss = NME(pred, gt_label)
+            total_NME_loss += pred_loss
+    print("End of validating....")
+    print(f"Average NME Loss : {total_NME_loss / len(test_loader):.4f}")
+    return total_NME_loss / len(test_loader)
+
+def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, exp_name="", only_save_best=False):
     start_train = time.time()
     
     overall_loss = []
@@ -89,55 +109,57 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
     global_validation_step = 0
     # Create directory for saving model
     mkdir_if_exist("./save")
-    best_val_gt_loss = 999
+    # Best NME loss and epoch for save best .pt
+    best_val_NME_loss = 999
+    best_epoch = 0
     # Starting training
-    for epoch in range(epoch):
+    for epoch in range(1, epoch + 1):
         print(f'epoch = {epoch}')
         start_time = time.time()
         train_loss = 0.0
-        train_gt_loss = 0.0
+        train_NME_loss = 0.0
         # Training part
         model.train()
+
+        writer.add_scalar(tag="hyperparameters/lr",
+                scalar_value=float(optimizer.param_groups[0]['lr']), 
+                global_step=epoch)
         for batch_idx, (data, label, gt_label) in enumerate(tqdm(train_loader)):
             
             data = data.to(device)
             label = label.to(device)
-
             outputs = model(data) 
             # intermediate supervision
             loss = 0
             for output in outputs:
                 loss += criterion(output, label)
-            
-
             optimizer.zero_grad()
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), max_norm= 5.)
             optimizer.step()
 
             train_loss += loss.item()
-            writer.add_scalar(tag="Train_loss",
+            writer.add_scalar(tag="train/step_loss",
                             scalar_value=float(loss), 
                             global_step=global_training_step)
             
             # Calculate gt loss with groud truth label
             pred_label = heatmap_to_landmark(outputs)
-            gt_loss =  NME(pred_label, gt_label)
-            writer.add_scalar(tag="Train_gt_loss",
-                            scalar_value=float(gt_loss), 
+            NME_loss =  NME(pred_label, gt_label)
+            writer.add_scalar(tag="train/NME_step_loss",
+                            scalar_value=float(NME_loss), 
                             global_step=global_training_step)
-            train_gt_loss += gt_loss
+            train_NME_loss += NME_loss
             global_training_step += 1
             del loss
   
         train_loss /= len(train_loader.dataset)
-        train_gt_loss /= len(train_loader.dataset)
+        train_NME_loss /= len(train_loader.dataset)
 
-        writer.add_scalar(tag="Train_epoch_gt_loss",
-                        scalar_value=float(train_gt_loss), 
+        writer.add_scalar(tag="train/epoch_loss",
+                        scalar_value=float(train_NME_loss), 
                         global_step=epoch)
-
-        writer.add_scalar(tag="Train_epoch_loss",
+        writer.add_scalar(tag="train/NME_epoch_loss",
                         scalar_value=float(train_loss), 
                         global_step=epoch)
         overall_loss.append(float(train_loss))
@@ -145,7 +167,7 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
         with torch.no_grad():
             model.eval()
             val_loss = 0.0
-            val_gt_loss = 0.0
+            val_NME_loss = 0.0
             for batch_idx, (data, label, gt_label) in enumerate(tqdm(val_loader)):
                 data = data.to(device)
                 label = label.to(device)
@@ -156,31 +178,34 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
                 for output in outputs:
                     loss += criterion(output, label)
                 val_loss += loss
-                writer.add_scalar(tag="Val_loss",
+                writer.add_scalar(tag="val/step_loss",
                             scalar_value=float(loss), 
                             global_step=global_validation_step)
 
-                # Calculate gt loss with groud truth label
+                # Calculate loss with groud truth label
                 pred_label = heatmap_to_landmark(outputs)
-                gt_loss =  NME(pred_label, gt_label)
-                writer.add_scalar(tag="Val_gt_loss",
-                                scalar_value=float(gt_loss), 
+                NME_loss =  NME(pred_label, gt_label)
+                writer.add_scalar(tag="val/NME_step_loss",
+                                scalar_value=float(NME_loss), 
                                 global_step=global_training_step)
-                val_gt_loss += gt_loss
+                val_NME_loss += NME_loss
                 global_validation_step += 1
             
             val_loss /= len(val_loader.dataset)
-            val_gt_loss /= len(val_loader.dataset)
-            writer.add_scalar(tag="Val_epoch_gt_loss",
-                scalar_value=float(val_gt_loss), 
+            val_NME_loss /= len(val_loader.dataset)
+            writer.add_scalar(tag="val/NME_epoch_loss",
+                scalar_value=float(val_NME_loss), 
                 global_step=epoch)
-
-            writer.add_scalar(tag="Val_epoch_loss",
+            writer.add_scalar(tag="val/epoch_loss",
                             scalar_value=float(val_loss), 
                             global_step=epoch)
             overall_val_loss.append(float(val_loss))
-
-        # Scheduler
+        # Testing part
+        test_NME_loss = val(model, test_loader, device)
+        writer.add_scalar(tag="test/NME_loss",
+                                scalar_value=float(test_NME_loss), 
+                                global_step=epoch)
+        # Scheduler steping
         scheduler.step(val_loss)
 
         # Display the results
@@ -190,15 +215,21 @@ def train(model, train_loader, val_loader, epoch:int, save_path:str, device, cri
         sec = elp_time % 60
         print('*'*10)
         print('time = {:.4f} MIN {:.4f} SEC, total time = {:.4f} Min {:.4f} SEC '.format(elp_time // 60, elp_time % 60, (end_time-start_train) // 60, (end_time-start_train) % 60))
-        print(f'training loss : {train_loss:.4f} ', )
-        print(f'training ground truth loss : {train_gt_loss:.4f} ', )
-        print(f'val loss : {val_loss:.4f} ')
-        print(f'val ground truth loss : {val_gt_loss:.4f} ')
+        print(f'Training loss : {train_loss:.6f} ', )
+        print(f'Training NME loss : {train_NME_loss:.6f} ', )
+        print(f'Validating loss : {val_loss:.6f} ')
+        print(f'Validating NME loss : {val_NME_loss:.6f} ')
+        print(f'Testing NME loss : {test_NME_loss:.6f} ')
         print('========================\n')
 
-        if val_gt_loss < best_val_gt_loss:
-            best_val_gt_loss = val_gt_loss  
+        if val_NME_loss < best_val_NME_loss:
+            best_val_NME_loss = val_NME_loss
+            best_epoch = epoch
             torch.save(model.state_dict(), os.path.join(save_path, 'best.pt'))
         if not only_save_best:
             torch.save(model.state_dict(), os.path.join(save_path, f'{epoch}.pt'))
+
     writer.close()
+    print("End of training !!!")
+    print(f"Best Epoch = {best_epoch}")
+    print(f"Best val NEM loss = {best_val_NME_loss:.6f}")

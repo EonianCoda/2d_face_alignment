@@ -6,26 +6,10 @@ import argparse
 from utils.evaluation import *
 from utils.model import FAN
 from utils.dataset import get_transform, process_annot, FaceSynthetics
-from utils.tool import load_parameters
+from utils.tool import load_parameters, val
 from cfg import cfg
 from tqdm import tqdm
-def val(model, test_set, batch_size:int, device):
-    test_loader = DataLoader(test_set, batch_size=batch_size, num_workers= 2, pin_memory=True)
-    
-    total_pred_loss = 0
-    criterion = nn.CrossEntropyLoss()
-    for batch_idx, (data, label, gt_label) in enumerate(tqdm(test_loader)):
-        with torch.no_grad():
-            data = data.to(device)
-            label = label.to(device)
-            outputs = model(data)
-            loss = 0
-            for output in outputs:
-                loss += criterion(output, label)
-            pred = heatmap_to_landmark(outputs)
-            pred_loss = NME(pred, gt_label)
-            total_pred_loss += pred_loss
-    print(total_pred_loss / len(test_loader))
+
 
 
 def main():

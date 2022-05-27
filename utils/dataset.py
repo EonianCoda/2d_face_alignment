@@ -45,6 +45,10 @@ def process_label(origin_label:np.ndarray):
 def process_annot(annot_path:str):
     """Read the annot file and process label(e.g. discard wrong label)
     """
+    path = os.path.dirname(annot_path)
+    cached_file = os.path.basename(annot_path).split('.')[0] + '(processing)' + 'pkl'
+    cached_file = os.path.join(path, cached_file)
+    
 
     # If python verions < 3.8.0, then use pickle5
     py_version = python_version()
@@ -53,9 +57,13 @@ def process_annot(annot_path:str):
         import pickle5 as pickle
     else:
         import pickle
+    # If cached file exists, then load it.
+    if os.path.isfile(cached_file):
+        return pickle.load(open(cached_file, 'rb'))
+    else:
+        images, labels = pickle.load(open(annot_path, 'rb'))
     
-    images, labels = pickle.load(open(annot_path, 'rb'))
-    
+
     valid_imgs = []
     valid_labels = []
     gt_labels = []
@@ -68,6 +76,9 @@ def process_annot(annot_path:str):
     
     valid_labels = np.stack(valid_labels)
     gt_labels = np.stack(gt_labels)
+    # Save cached file
+    if not os.path.isfile(cached_file):
+        pickle.dump((valid_imgs, valid_labels, gt_labels), open(cached_file, 'wb'))
 
     return valid_imgs, valid_labels, gt_labels
 
