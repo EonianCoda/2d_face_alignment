@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-def NME(pred, gt) -> float:
+def NME(pred, gt, average=True) -> float:
     if isinstance(pred, torch.Tensor):
         pred = pred.numpy()
     else:
@@ -11,7 +11,10 @@ def NME(pred, gt) -> float:
         raise ValueError("Prediction and ground truth should have same dimensions!")
 
     dist = np.sqrt(np.sum((pred - gt) ** 2, (-1,-2)))
-    dist = np.mean(dist)
+    if average:
+        dist = np.mean(dist)
+    else:
+        dist = np.sum(dist)
     dist /= 384
     return float(dist)
 

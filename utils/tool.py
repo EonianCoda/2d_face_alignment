@@ -77,10 +77,12 @@ def load_parameters(model, path):
 
 def val(model, test_loader, device):
     print("Starting Validation....")
-    total_NME_loss = 0
+    
     model = model.to(device)
     model.eval()
     # criterion = nn.CrossEntropyLoss()
+    total_NME_loss = 0
+    num_data = 0
     for batch_idx, (data, label, gt_label) in enumerate(tqdm(test_loader)):
         with torch.no_grad():
             data = data.to(device)
@@ -90,11 +92,12 @@ def val(model, test_loader, device):
             # for output in outputs:
             #     loss += criterion(output, label)
             pred = heatmap_to_landmark(outputs)
-            pred_loss = NME(pred, gt_label)
+            pred_loss = NME(pred, gt_label, average=False)
+            num_data += data.shape[0]
             total_NME_loss += pred_loss
     print("End of validating....")
-    print(f"Average NME Loss : {total_NME_loss / len(test_loader):.4f}")
-    return total_NME_loss / len(test_loader)
+    print(f"Average NME Loss : {total_NME_loss / num_data:.4f}")
+    return total_NME_loss / num_data
 
 def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, exp_name="", only_save_best=False):
     start_train = time.time()
@@ -145,7 +148,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
             
             # Calculate gt loss with groud truth label
             pred_label = heatmap_to_landmark(outputs)
-            NME_loss =  NME(pred_label, gt_label)
+            NME_loss = NME(pred_label, gt_label)
             writer.add_scalar(tag="train/NME_step_loss",
                             scalar_value=float(NME_loss), 
                             global_step=global_training_step)
