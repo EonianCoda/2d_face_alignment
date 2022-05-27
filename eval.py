@@ -1,15 +1,11 @@
 import torch
 from torch.utils.data import DataLoader
-import torch.nn as nn
-import os
 import argparse
 from utils.evaluation import *
 from utils.model import FAN
 from utils.dataset import get_transform, process_annot, FaceSynthetics
 from utils.tool import load_parameters, val
 from cfg import cfg
-from tqdm import tqdm
-
 
 
 def main():
@@ -26,13 +22,12 @@ def main():
 
     images, labels, gt_labels = process_annot(annot_path)
     test_set = FaceSynthetics(data_path, images, labels, gt_labels, get_transform("test"))
+    test_loader = DataLoader(test_set, batch_size=batch_size, num_workers= 2, pin_memory=True)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = FAN(num_HG=args.num_HG)
     load_parameters(model, args.model_path)
-    model = model.to(device)
-    model.eval()
-    val(model, test_set, batch_size, device)
+    val(model, test_loader, device)
 
 
 if __name__ == "__main__":

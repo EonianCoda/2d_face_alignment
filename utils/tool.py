@@ -77,9 +77,9 @@ def load_parameters(model, path):
 
 def val(model, test_loader, device):
     print("Starting Validation....")
-    
-    
     total_NME_loss = 0
+    model = model.to(device)
+    model.eval()
     # criterion = nn.CrossEntropyLoss()
     for batch_idx, (data, label, gt_label) in enumerate(tqdm(test_loader)):
         with torch.no_grad():
