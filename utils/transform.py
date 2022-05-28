@@ -23,8 +23,13 @@ class RandomHorizontalFlip(object):
             label[:, 0] = (max_size_on_label - 1) - label[:, 0]
             gt_label[:, 0] = (max_size - 1) - gt_label[:, 0]
             if self.do_mapping:
-                label[self.mapping[0], ...] = label[self.mapping[1], ...]
-                gt_label[self.mapping[0], ...] = gt_label[self.mapping[1], ...]
+                tmp = label[self.mapping[1], ...].clone()
+                label[self.mapping[1], ...] = label[self.mapping[0], ...]
+                label[self.mapping[0], ...] = tmp
+
+                tmp = gt_label[self.mapping[1], ...].clone()
+                gt_label[self.mapping[1], ...] = gt_label[self.mapping[0], ...]
+                gt_label[self.mapping[0], ...] = tmp
         return img, label, gt_label
 
 class RandomNoise(object):
