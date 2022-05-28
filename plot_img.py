@@ -23,7 +23,7 @@ def main():
 
 
     images, labels, gt_labels = process_annot(annot_path)
-    test_set = FaceSynthetics(data_path, images, labels, gt_labels, get_transform("test"))
+    test_set = FaceSynthetics(data_path, images, labels, gt_labels, "test")
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = FAN(num_HG=args.num_HG)

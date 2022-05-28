@@ -6,7 +6,7 @@ from platform import python_version
 from PIL import Image
 import os
 import random
-
+import math
 
 def process_label(origin_label:np.ndarray):
     # Wrong Label
@@ -110,26 +110,57 @@ def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_ima
     val_labels = labels[val_idxs]
     val_gt_labels = gt_labels[val_idxs]
 
-    train_dataset = FaceSynthetics(data_root, train_images, train_labels, train_gt_labels, get_transform('train'))
-    val_dataset = FaceSynthetics(data_root, val_images, val_labels, val_gt_labels, get_transform('val'))
+    train_dataset = FaceSynthetics(data_root, train_images, train_labels, train_gt_labels, 'train')
+    val_dataset = FaceSynthetics(data_root, val_images, val_labels, val_gt_labels, 'val')
     return train_dataset, val_dataset
 
+class Heatmap_converter(object):
+    def __init__(self, img_size=384/4, window_size=7, sigma=1.75):
+        self.img_size = img_size
+        self.window_size = window_size
+        self.pad_w = window_size // 2
+        self.gaussian_fun = lambda y, x : math.exp(-1 * (((self.pad_w - x) ** 2 + (self.pad_w - y) ** 2) / (2 * sigma * sigma)))
+    def _generate_gaussian_kernel(self):
+        self.kernel = torch.zeros((self.window_size, self.window_size))
+        for y in range(self.window_size):
+            for x in range(self.window_size):
+                self.kernel[y, x] = self.gaussian_fun(y, x)
+
+    def convert(self, landmark:torch.Tensor) -> torch.Tensor:
+        """Convert landmark to heatmark
+        Args:
+            landmark: a torch tensor has shape(68,2)
+        """
+        heatmap = torch.zeros((landmark.shape[0], self.img_size, self.img_size)).float()
+        for i, (x, y) in enumerate(landmark):
+            
+            ul_h  = (max(y - self.pad_w, 0), max(x - self.pad_w, 0)) # upper left point on heatmap
+            lr_h = (min(y + self.pad_w + 1, self.img_size), min(x + self.pad_w + 1, self.img_size)) # lower right point on heatmap
+
+            ul_k = (0 if (y - self.pad_w) > 0 else -1 * (y - self.pad_w), # upper left point on kernel
+                    0 if (x - self.pad_w) > 0 else -1 * (x - self.pad_w)) 
+
+ 
+            lr_k = ((self.window_size - max(-1 * ((self.img_size - 1) - (y + self.pad_w)), 0)), # lower right point on kernel
+                    (self.window_size - max(-1 * ((self.img_size - 1) - (x + self.pad_w)), 0)))
+            heatmap[i, ul_h[0]:lr_h[0], ul_h[1]:lr_h[1]] = self.kernel[ul_k[0]:lr_k[0], ul_k[1]:lr_k[1]]
+
+        return heatmap
+
 class FaceSynthetics(Dataset):
-    def __init__(self, data_root:str, images:list, labels:np.ndarray, gt_labels:np.ndarray, transform=None, heatmap_size=96) -> None:
+    def __init__(self, data_root:str, images:list, labels:np.ndarray, gt_labels:np.ndarray, transform="train", heatmap_size=96) -> None:
         super(FaceSynthetics, self).__init__()
         self.data_root = data_root
+        self.num_classes = len(self.labels[0])
+        # transform
+        self.transform = get_transform(transform)
+        # data
         self.images = images
         self.labels= torch.tensor(labels)
         self.gt_labels = torch.tensor(gt_labels)
-        self.transform = transform 
+        # heatmap converter
+        self.converter = Heatmap_converter(heatmap_size)
         self.heatmap_size = heatmap_size
-        self.num_classes = len(self.labels[0])
-
-    def gen_heatmap(self, label):
-        heatmap = np.zeros((self.num_classes, self.heatmap_size, self.heatmap_size))
-        for i, (x, y) in enumerate(label):
-            heatmap[i, y, x] = 1
-        return torch.tensor(heatmap).float()
 
     def __len__(self):
         return len(self.images)
@@ -139,6 +170,6 @@ class FaceSynthetics(Dataset):
         img_path = os.path.join(self.data_root, self.images[idx])
         im = Image.open(img_path)
         im, label, gt_label = self.transform(im, self.labels[idx], self.gt_labels[idx])
-        # training label
-        label = self.gen_heatmap(self.labels[idx])
+        # transform point to heatmap
+        label = self.converter.convert(self.labels[idx])
         return im, label, gt_label

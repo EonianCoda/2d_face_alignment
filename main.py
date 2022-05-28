@@ -71,7 +71,7 @@ def main():
     
     # Testing data
     images, labels, gt_labels = process_annot(test_annot)
-    test_set = FaceSynthetics(test_data_root, images, labels, gt_labels, get_transform("test"))
+    test_set = FaceSynthetics(test_data_root, images, labels, gt_labels, "test")
     test_loader = DataLoader(test_set, batch_size=batch_size, num_workers= 2, pin_memory=True)
     train(model=model,
         train_loader=train_loader,

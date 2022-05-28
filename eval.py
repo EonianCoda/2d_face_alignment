@@ -21,7 +21,7 @@ def main():
     batch_size = cfg['batch_size']
 
     images, labels, gt_labels = process_annot(annot_path)
-    test_set = FaceSynthetics(data_path, images, labels, gt_labels, get_transform("test"))
+    test_set = FaceSynthetics(data_path, images, labels, gt_labels, "test")
     test_loader = DataLoader(test_set, batch_size=batch_size, num_workers= 2, pin_memory=True)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
