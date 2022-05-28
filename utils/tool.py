@@ -160,10 +160,10 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
         train_NME_loss /= len(train_loader.dataset)
 
         writer.add_scalar(tag="train/epoch_loss",
-                        scalar_value=float(train_NME_loss), 
+                        scalar_value=float(train_loss), 
                         global_step=epoch)
         writer.add_scalar(tag="train/NME_epoch_loss",
-                        scalar_value=float(train_loss), 
+                        scalar_value=float(train_NME_loss), 
                         global_step=epoch)
         overall_loss.append(float(train_loss))
         # validation part 
