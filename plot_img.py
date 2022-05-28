@@ -13,14 +13,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_HG', type=int, default=4)
     parser.add_argument('--model_path', type=str)
-    parser.add_argument('--annot_path', type=str, default="./data/val_annot.pkl")
-    parser.add_argument('--data_path', type=str, default="./data/val")
+    parser.add_argument('--type', type=str, default="val")
     parser.add_argument('--plot_img', type=int, default=10)
     args = parser.parse_args()
 
-    annot_path = args.annot_path
-    data_path = args.data_path
-
+    annot_path = f"./data/{args.type}_annot.pkl"
+    data_path = f"./data/{args.type}"
 
     images, labels, gt_labels = process_annot(annot_path)
     test_set = FaceSynthetics(data_path, images, labels, gt_labels, "test")
