@@ -16,7 +16,7 @@ def main():
     parser.add_argument('--model_path', type=str)
     parser.add_argument('--type', type=str, default="val")
     parser.add_argument('--plot_img', type=int, default=10)
-    # parser.add_argument('--show_index', action="store_false")
+    parser.add_argument('--show_index', action="store_false")
     parser.add_argument('--show_line', action="store_true")
     args = parser.parse_args()
 

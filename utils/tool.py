@@ -179,7 +179,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                 NME_loss =  NME(pred_label, gt_label)
                 writer.add_scalar(tag="val/NME_step_loss",
                                 scalar_value=float(NME_loss), 
-                                global_step=global_training_step)
+                                global_step=global_validation_step)
                 val_NME_loss += NME_loss
                 global_validation_step += 1
             
