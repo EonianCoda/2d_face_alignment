@@ -3,7 +3,7 @@ cfg = {
     # Scheduler setting
     # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
     # If scheduler == 1, then use warm_epoch arg
-    'scheduler_type': 0, 
+    'scheduler_type': 1, 
     'warm_epoch': 1, 
     # training data setting
     'train_annot':'./data/train_annot.pkl',
@@ -15,6 +15,6 @@ cfg = {
     # Training hyperparameters
     'seed': 987,
     'batch_size': 8,
-    'lr': 1e-2,
+    'lr': 1e-4,
     'epoch':10,
 }

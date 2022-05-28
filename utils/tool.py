@@ -135,15 +135,15 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
             # intermediate supervision
             loss = 0
             for output in outputs:
-                loss += criterion(output, label)
+                loss += criterion(output, label) / (3333.0)
+            train_loss += loss.item()
             optimizer.zero_grad()
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), max_norm= 5.)
             optimizer.step()
 
-            train_loss += loss.item()
             writer.add_scalar(tag="train/step_loss",
-                            scalar_value=float(loss), 
+                            scalar_value=float(loss),
                             global_step=global_training_step)
             
             # Calculate gt loss with groud truth label
@@ -179,8 +179,8 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                 # intermediate supervision
                 loss = 0
                 for output in outputs:
-                    loss += criterion(output, label)
-                val_loss += loss
+                    loss += criterion(output, label) / (3333.0)
+                val_loss += loss.item()
                 writer.add_scalar(tag="val/step_loss",
                             scalar_value=float(loss), 
                             global_step=global_validation_step)

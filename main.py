@@ -65,7 +65,7 @@ def main():
     elif scheduler_type == 1:
         warm_epoch = cfg['warm_epoch']
         scheduler = Warmup_ReduceLROnPlateau(optimizer, warm_epoch, patience=3, verbose=True)
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.MSELoss(reduction="sum")
     model = model.to(device)
     
     # Testing data

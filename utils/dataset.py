@@ -119,12 +119,14 @@ class Heatmap_converter(object):
         self.img_size = img_size
         self.window_size = window_size
         self.pad_w = window_size // 2
-        self.gaussian_fun = lambda y, x : math.exp(-1 * (((self.pad_w - x) ** 2 + (self.pad_w - y) ** 2) / (2 * sigma * sigma)))
+        self.sigma = sigma
+        self._generate_gaussian_kernel()
     def _generate_gaussian_kernel(self):
+        gaussian_fun = lambda y, x : math.exp(-1 * (((self.pad_w - x) ** 2 + (self.pad_w - y) ** 2) / (2 * self.sigma * self.sigma)))
         self.kernel = torch.zeros((self.window_size, self.window_size))
         for y in range(self.window_size):
             for x in range(self.window_size):
-                self.kernel[y, x] = self.gaussian_fun(y, x)
+                self.kernel[y, x] = gaussian_fun(y, x)
 
     def convert(self, landmark:torch.Tensor) -> torch.Tensor:
         """Convert landmark to heatmark
@@ -151,13 +153,14 @@ class FaceSynthetics(Dataset):
     def __init__(self, data_root:str, images:list, labels:np.ndarray, gt_labels:np.ndarray, transform="train", heatmap_size=96) -> None:
         super(FaceSynthetics, self).__init__()
         self.data_root = data_root
-        self.num_classes = len(self.labels[0])
+        
         # transform
         self.transform = get_transform(transform)
         # data
         self.images = images
         self.labels= torch.tensor(labels)
         self.gt_labels = torch.tensor(gt_labels)
+        self.num_classes = len(self.labels[0])
         # heatmap converter
         self.converter = Heatmap_converter(heatmap_size)
         self.heatmap_size = heatmap_size
@@ -171,5 +174,5 @@ class FaceSynthetics(Dataset):
         im = Image.open(img_path)
         im, label, gt_label = self.transform(im, self.labels[idx], self.gt_labels[idx])
         # transform point to heatmap
-        label = self.converter.convert(self.labels[idx])
+        label = self.converter.convert(label)
         return im, label, gt_label
