@@ -21,6 +21,8 @@ def draw_point(im, coord:tuple, color:tuple, text:str=None):
                 thickness=-1)
     return im
 def plot_keypoints(im:np.ndarray, gt:torch.Tensor, pred:torch.Tensor, show_index:bool=True, show_line:bool=True):
+    if isinstance(im, np.ndarray) and im.all() == None:
+        raise ValueError("Image shouldn't be None!")
     if isinstance(gt, torch.Tensor):
         gt = gt.long().tolist()
     if isinstance(pred, torch.Tensor):

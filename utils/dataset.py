@@ -172,7 +172,8 @@ class FaceSynthetics(Dataset):
         # Read imagee
         img_path = os.path.join(self.data_root, self.images[idx])
         im = Image.open(img_path)
-        im, label, gt_label = self.transform(im, self.labels[idx], self.gt_labels[idx])
+        im, label, gt_label = self.transform(im.copy(), self.labels[idx], self.gt_labels[idx])
         # transform point to heatmap
+        im.close()
         label = self.converter.convert(label)
         return im, label, gt_label

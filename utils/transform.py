@@ -6,14 +6,19 @@ class RandomHorizontalFlip(object):
     def __init__(self, flip_x=0.5):
         self.flip_x = flip_x
     def __call__(self, img, label:torch.Tensor, gt_label:torch.Tensor):
-        c, h, w = img.shape
+        """
+        Args:
+            img: the PIL image
+        """
+        h, w = img.size
         max_size_on_label = int(h / 4)
         max_size = h
         if random.random() < self.flip_x:
             img = transforms.RandomHorizontalFlip(1.0)(img)
+
             # Flip x coordinate
-            label[0] = (max_size_on_label - 1) - label[0]
-            gt_label[0] = (max_size - 1) - gt_label[0]
+            label[:, 0] = (max_size_on_label - 1) - label[:, 0]
+            gt_label[:, 0] = (max_size - 1) - gt_label[:, 0]
         return img, label, gt_label
 
 class RandomNoise(object):
@@ -29,9 +34,9 @@ class RandomNoise(object):
                 pos_x = int((w - 1) * random.random())
                 pos_y = int((h - 1) * random.random())
                 if prob > 0.5:
-                    img[:, pos_y, pos_x] = 0
+                    img[:, pos_y, pos_x] = 0.0
                 else:
-                    img[:, pos_y, pos_x] = 255 
+                    img[:, pos_y, pos_x] = 1.0 
         return img
 
 class Transform(object):
@@ -46,13 +51,16 @@ class Transform(object):
         self.random_flip = RandomHorizontalFlip(flip_x)
         self.random_noise = RandomNoise(random_noise, noise_ratio)
     def __call__(self, img, label, gt_label):
-        img = transforms.ToTensor()(img)
-        # Training augumentation
+        
+        # Random flip
         if self.is_train:
-            # Random flip
             img, label, gt_label = self.random_flip(img, label, gt_label)
-            # Random noise
-            # img = self.random_noise(img)
+
+        img = transforms.ToTensor()(img)
+
+        # # Random noise
+        # if self.is_train:
+        #     img = self.random_noise(img)
 
         img = self.normalize(img)
         return img, label, gt_label
