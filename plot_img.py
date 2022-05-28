@@ -3,7 +3,7 @@ import os
 import argparse
 from utils.evaluation import *
 from utils.model import FAN
-from utils.dataset import get_transform, process_annot, FaceSynthetics
+from utils.dataset import process_annot, FaceSynthetics
 from utils.tool import load_parameters, plot_keypoint
 import matplotlib.pyplot as plt
 import random

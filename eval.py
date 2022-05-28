@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 import argparse
 from utils.evaluation import *
 from utils.model import FAN
-from utils.dataset import get_transform, process_annot, FaceSynthetics
+from utils.dataset import process_annot, FaceSynthetics
 from utils.tool import load_parameters, val
 from cfg import cfg
 
