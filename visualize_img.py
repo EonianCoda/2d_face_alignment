@@ -46,11 +46,12 @@ def main():
             img = img.to(device).unsqueeze(dim=0)
             outputs = model(img)
             pred = heatmap_to_landmark(outputs)
+            pred = pred[0]
             NME_loss = NME(pred, gt_label)
 
             # Draw keypoints on the image
             im = read_img(os.path.join(data_path, img_path))
-            im = plot_keypoints(im, gt_label, pred[0], show_index, show_line)
+            im = plot_keypoints(im, gt_label, pred, show_index, show_line)
             plt.figure()
             plt.title(f"Loss = {NME_loss:4f}")
             plt.imshow(im)
