@@ -6,23 +6,28 @@ class RandomHorizontalFlip(object):
     def __init__(self, flip_x=0.5):
         self.flip_x = flip_x
     def __call__(self, img, label:torch.Tensor, gt_label:torch.Tensor):
+        c, h, w = img.shape
+        max_size_on_label = int(h / 4)
+        max_size = h
         if random.random() < self.flip_x:
             img = transforms.RandomHorizontalFlip(1.0)(img)
-            label = torch.tensor([95, 95]) - label
-            gt_label = torch.tensor([383, 383]) - gt_label
+            # Flip x coordinate
+            label[1] = (max_size_on_label - 1) - label[1]
+            gt_label[1] = (max_size - 1) - gt_label[1]
         return img, label, gt_label
 
 class RandomNoise(object):
-    def __init__(self, prob=0.5, ratio=0.1):
+    def __init__(self, prob=0.5, ratio=0.05):
         self.prob = prob
         self.ratio = ratio
     def __call__(self, img):
+        c, h, w = img.shape
         if random.random() < self.prob:
-            noise_num = int(random.random() * self.ratio * (147456))
+            noise_num = int(random.random() * self.ratio * h * w)
             for _ in range(noise_num):
                 prob = random.random()
-                pos_x = int(383 * random.random())
-                pos_y = int(383 * random.random())
+                pos_x = int((w - 1) * random.random())
+                pos_y = int((h - 1) * random.random())
                 if prob > 0.5:
                     img[:, pos_y, pos_x] = 0
                 else:
