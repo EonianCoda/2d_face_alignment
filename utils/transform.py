@@ -12,8 +12,8 @@ class RandomHorizontalFlip(object):
         if random.random() < self.flip_x:
             img = transforms.RandomHorizontalFlip(1.0)(img)
             # Flip x coordinate
-            label[1] = (max_size_on_label - 1) - label[1]
-            gt_label[1] = (max_size - 1) - gt_label[1]
+            label[0] = (max_size_on_label - 1) - label[0]
+            gt_label[0] = (max_size - 1) - gt_label[0]
         return img, label, gt_label
 
 class RandomNoise(object):

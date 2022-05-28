@@ -23,8 +23,9 @@ def heatmap_to_landmark(pred):
     """
     pred = pred[-1].detach().cpu()
 
-    lmx = torch.argmax(torch.max(pred, dim=2)[0], dim=2) * 4
-    lmy = torch.argmax(torch.max(pred, dim=3)[0], dim=2) * 4
+    lmy = torch.argmax(torch.max(pred, dim=2)[0], dim=2) * 4
+    lmx = torch.argmax(torch.max(pred, dim=3)[0], dim=2) * 4
+    
 
     landmark = torch.stack((lmx, lmy), dim=2)
     return landmark
