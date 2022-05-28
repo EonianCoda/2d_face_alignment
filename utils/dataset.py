@@ -37,7 +37,7 @@ def process_label(origin_label:np.ndarray):
         if flag:
             break
     # Wrong label
-    if (label >= 384).any() or (label < 0).any():
+    if (label >= 96).any() or (label < 0).any():
         return False, None
     label = label.astype(np.int32)
     return True, label
