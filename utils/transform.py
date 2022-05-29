@@ -37,7 +37,7 @@ class RandomNoise(object):
         self.prob = prob
         self.ratio = ratio
     def __call__(self, img):
-        c, h, w = img.shape
+        h, w, c = img.shape
         if random.random() < self.prob:
             noise_num = int(random.random() * self.ratio * h * w)
             for _ in range(noise_num):
@@ -45,9 +45,9 @@ class RandomNoise(object):
                 pos_x = int((w - 1) * random.random())
                 pos_y = int((h - 1) * random.random())
                 if prob > 0.5:
-                    img[:, pos_y, pos_x] = 0.0
+                    img[pos_y, pos_x,:] = 0.0
                 else:
-                    img[:, pos_y, pos_x] = 1.0 
+                    img[pos_y, pos_x,:] = 1.0 
         return img
 
 class Transform(object):
