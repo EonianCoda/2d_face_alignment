@@ -6,17 +6,16 @@ import math
 
 
 class RandomRoation(object):
-    def __init__(self, img_shape:tuple=None, prob=0.5, angle=(-30, 30)):
+    def __init__(self, img_shape:tuple=(384,384,3), prob=0.5, angle=(-30, 30)):
         """Random roation
         Args:
-            img_shape: the shape of input image
+            img_shape: the shape of input image, must be (h,w,c)
         """
         self.prob = prob
         self.angle = angle
         self.angle_list = [self.angle[0] + i for i in range(self.angle[1] - self.angle[0])]
         self.img_shape = img_shape
-        if self.img_shape  != None:
-            self._generate_rotation_matrix()
+        self._generate_rotation_matrix()
 
     def _generate_rotation_matrix(self):
         h, w, c = self.img_shape
@@ -79,7 +78,7 @@ class RandomHorizontalFlip(object):
         max_size_on_label = int(h / 4)
         max_size = h
         if random.random() < self.flip_x:
-            img = transforms.RandomHorizontalFlip(1.0)(img)
+            img = F.hflip(img) #transforms.RandomHorizontalFlip(1.0)(img)
 
             # Flip x coordinate
             label[:, 0] = (max_size_on_label - 1) - label[:, 0]
@@ -95,7 +94,7 @@ class RandomHorizontalFlip(object):
         return img, label, gt_label
 
 class RandomNoise(object):
-    def __init__(self, prob=0.5, ratio=0.05):
+    def __init__(self, prob=0.5, ratio=0.1):
         self.prob = prob
         self.ratio = ratio
     def __call__(self, img):
@@ -113,25 +112,28 @@ class RandomNoise(object):
         return img
 
 class Transform(object):
-    def __init__(self, is_train=True, flip_x=0.5, random_noise=0.5, noise_ratio=0.1):
-        self.flip_x = flip_x
-        self.random_noise = random_noise
+    def __init__(self, is_train=True):
         self.is_train = is_train
 
         means = [0.485, 0.456, 0.406]
         stds = [0.229, 0.224, 0.225]
         self.normalize = transforms.Normalize(means, stds)
-        self.random_flip = RandomHorizontalFlip(flip_x)
-        self.random_noise = RandomNoise(random_noise, noise_ratio)
+        if self.is_train:
+            self.random_flip = RandomHorizontalFlip()
+            self.random_noise = RandomNoise()
+            self.random_rotation = RandomRoation()
     def __call__(self, img, label, gt_label):
         
-        # Random flip
-        # if self.is_train:
-        #     img, label, gt_label = self.random_flip(img, label, gt_label)
+        if self.is_train:
+            # # Random flip
+            # img, label, gt_label = self.random_flip(img, label, gt_label)
+            # Random rotation
+            img, label, gt_label = self.random_rotation(img, label, gt_label)
+
 
         img = transforms.ToTensor()(img)
 
-        # # Random noise
+        # Random noise
         if self.is_train:
             img = self.random_noise(img)
 

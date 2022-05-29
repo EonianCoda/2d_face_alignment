@@ -83,7 +83,7 @@ def process_annot(annot_path:str):
     return valid_imgs, valid_labels, gt_labels
 
 
-def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0):
+def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0, transform:dict=None):
     """Get training set and valiating set
     Args:
         data_root: the data root for images
