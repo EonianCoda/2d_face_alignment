@@ -4,7 +4,7 @@ cfg = {
     # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
     # If scheduler == 1, then use warm_epoch arg
     'scheduler_type': 1, 
-    'warm_epoch': 1, 
+    'warm_epoch': 2, 
     # training data setting
     'train_annot':'./data/train_annot.pkl',
     'train_data_root':'./data/train',

@@ -126,14 +126,14 @@ class Transform(object):
     def __call__(self, img, label, gt_label):
         
         # Random flip
-        if self.is_train:
-            img, label, gt_label = self.random_flip(img, label, gt_label)
+        # if self.is_train:
+        #     img, label, gt_label = self.random_flip(img, label, gt_label)
 
         img = transforms.ToTensor()(img)
 
         # # Random noise
-        # if self.is_train:
-        #     img = self.random_noise(img)
+        if self.is_train:
+            img = self.random_noise(img)
 
         img = self.normalize(img)
         return img, label, gt_label
