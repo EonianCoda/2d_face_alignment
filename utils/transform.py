@@ -130,7 +130,6 @@ class Transform(object):
             # Random rotation
             img, label, gt_label = self.random_rotation(img, label, gt_label)
 
-
         img = transforms.ToTensor()(img)
 
         # Random noise

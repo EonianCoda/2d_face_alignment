@@ -123,8 +123,9 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
             outputs = model(data) 
             # intermediate supervision
             loss = 0
+            num_target = (label != 0).sum()
             for output in outputs:
-                loss += criterion(output, label) / (3333.0)
+                loss += criterion(output, label) / num_target
             train_loss += loss.item()
             optimizer.zero_grad()
             loss.backward()
@@ -167,8 +168,9 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                 outputs = model(data)
                 # intermediate supervision
                 loss = 0
+                num_target = (label != 0).sum()
                 for output in outputs:
-                    loss += criterion(output, label) / (3333.0)
+                    loss += criterion(output, label) / num_target
                 val_loss += loss.item()
                 writer.add_scalar(tag="val/step_loss",
                             scalar_value=float(loss), 
