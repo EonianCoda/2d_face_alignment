@@ -1,6 +1,68 @@
 import torch
 from torchvision.transforms import transforms
+import torchvision.transforms.functional as F
 import random
+import math
+
+
+class RandomRoation(object):
+    def __init__(self, img_shape:tuple=None, prob=0.5, angle=(-30, 30)):
+        """Random roation
+        Args:
+            img_shape: the shape of input image
+        """
+        self.prob = prob
+        self.angle = angle
+        self.angle_list = [self.angle[0] + i for i in range(self.angle[1] - self.angle[0])]
+        self.img_shape = img_shape
+        if self.img_shape  != None:
+            self._generate_rotation_matrix()
+
+    def _generate_rotation_matrix(self):
+        h, w, c = self.img_shape
+        self.rot_matrices = []
+
+        for angle in self.angle_list:
+            degree = angle / (180 / math.pi)
+            cos , sin = math.cos(degree), math.sin(degree) 
+            rot_matrix = torch.tensor([[cos, sin],[-sin, cos]])
+            self.rot_matrices.append(rot_matrix.float())
+
+    @staticmethod
+    def _rotate_points(points, w, h, rot_matrix):
+        center = torch.tensor([[w / 2, h / 2]])
+        points -= center
+        points = torch.matmul(rot_matrix, points.T)
+        points = points.T + center
+        return points
+
+    def __call__(self, img, label:torch.Tensor, gt_label:torch.Tensor):
+        if random.random() < self.prob:
+            h, w, c = self.img_shape
+            
+            angle_i = random.randint(0, len(self.angle_list)-1)
+            angle = self.angle_list[angle_i]
+            img = F.rotate(img, angle)
+
+            rot_matrix = self.rot_matrices[angle_i]
+
+            # Rotate groud truth label
+            r_gt_label = self._rotate_points(gt_label, w, h, rot_matrix)
+
+            if (r_gt_label < 0).any() or (r_gt_label >= h).any():
+                return img, label, gt_label
+
+            # Rotate label
+            r_label = self._rotate_points(label.float(), w / 4, h / 4, rot_matrix)
+            if (r_label < 0).any() or (r_label >= h / 4).any():
+                return img, label, gt_label
+
+            # Convert to integer
+            r_label = r_label.long()
+
+            return img, r_label, r_gt_label
+
+        return img, label, gt_label
 
 class RandomHorizontalFlip(object):
     def __init__(self, flip_x=0.5):

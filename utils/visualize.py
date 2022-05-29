@@ -20,13 +20,18 @@ def draw_point(im, coord:tuple, color:tuple, text:str=None):
                 color=color, 
                 thickness=-1)
     return im
-def plot_keypoints(im:np.ndarray, gt:torch.Tensor, pred:torch.Tensor, show_index:bool=True, show_line:bool=True):
+def plot_keypoints(im, gt:torch.Tensor, pred:torch.Tensor, show_index:bool=True, show_line:bool=True):
     # if isinstance(im, np.ndarray) and im.all() == None:
     #     raise ValueError("Image shouldn't be None!")
+
+    if not isinstance(im, np.ndarray):
+        im = np.array(im)
     if isinstance(gt, torch.Tensor):
         gt = gt.long().tolist()
     if isinstance(pred, torch.Tensor):
         pred = pred.long().tolist()
+
+    im = im.copy()
     # draw points
     for i, ((gt_x, gt_y), (pred_x, pred_y)) in enumerate(zip(gt, pred)):
         text = str(i+1) if show_index else None
