@@ -209,11 +209,12 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
         sec = elp_time % 60
         print('*'*10)
         print('time = {:.4f} MIN {:.4f} SEC, total time = {:.4f} Min {:.4f} SEC '.format(elp_time // 60, elp_time % 60, (end_time-start_train) // 60, (end_time-start_train) % 60))
-        print(f'Training loss : {train_loss:.6f} ', )
-        print(f'Training NME loss : {train_NME_loss:.6f} ', )
-        print(f'Validating loss : {val_loss:.6f} ')
-        print(f'Validating NME loss : {val_NME_loss:.6f} ')
-        print(f'Testing NME loss : {test_NME_loss:.6f} ')
+        formatted_str = "{: <20} : {:.6f}"
+        print(formatted_str.format('Training loss', train_loss))
+        print(formatted_str.format('Training NME loss', train_NME_loss))
+        print(formatted_str.format('Validating loss', val_loss))
+        print(formatted_str.format('Validating NME loss', val_NME_loss))
+        print(formatted_str.format('Testing NME loss', test_NME_loss))
         print('========================\n')
 
         if val_NME_loss < best_val_NME_loss:
