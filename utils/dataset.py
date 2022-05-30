@@ -133,7 +133,13 @@ def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_ima
 
 def get_test_dataset(data_path:str, annot_path:str, model_type:str):
     images, labels, gt_labels = process_annot(annot_path, model_type)
-    return FaceSynthetics(data_path, images, labels, gt_labels, "test")
+    test_dataset = FaceSynthetics(data_root=data_path, 
+                                    images=images,
+                                    labels=labels,
+                                    gt_labels=gt_labels,
+                                    model_type=model_type,
+                                    transform='test')
+    return test_dataset
 
 class Heatmap_converter(object):
     def __init__(self, heatmap_size=96, window_size=7, sigma=1.75):

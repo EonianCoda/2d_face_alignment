@@ -82,6 +82,10 @@ def val(model, test_loader, device, model_type:str):
             #     loss += criterion(output, label)
             if model_type == "classifier":
                 pred = heatmap_to_landmark(outputs)
+            elif model_type == "regressor":
+                pred = outputs.detach().cpu()
+
+
             pred_loss = NME(pred, gt_label, average=False)
             num_data += data.shape[0]
             total_NME_loss += pred_loss
@@ -132,7 +136,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                 for output in outputs:
                     loss += criterion(output, label) / num_target
             elif model_type == "regressor":
-                loss += criterion(output, label)
+                loss += criterion(outputs, label)
             train_loss += loss.item()
             optimizer.zero_grad()
             loss.backward()
@@ -146,6 +150,8 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
             # Calculate gt loss with groud truth label
             if model_type == "classifier":
                 pred_label = heatmap_to_landmark(outputs)
+            else:
+                pred_label = outputs.detach().cpu()
 
             NME_loss = NME(pred_label, gt_label)
             writer.add_scalar(tag="train/NME_step_loss",
@@ -182,7 +188,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                     for output in outputs:
                         loss += criterion(output, label) / num_target
                 elif model_type == "regressor":
-                    loss += criterion(output, label)
+                    loss += criterion(outputs, label)
                 val_loss += loss.item()
                 writer.add_scalar(tag="val/step_loss",
                             scalar_value=float(loss), 
@@ -191,6 +197,9 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                 # Calculate loss with groud truth label
                 if model_type == "classifier":
                     pred_label = heatmap_to_landmark(outputs)
+                else:
+                    pred_label = outputs.detach().cpu()
+
                 NME_loss =  NME(pred_label, gt_label)
                 writer.add_scalar(tag="val/NME_step_loss",
                                 scalar_value=float(NME_loss), 
