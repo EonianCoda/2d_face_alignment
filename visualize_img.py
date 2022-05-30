@@ -1,18 +1,21 @@
+import imp
 import torch
 import os
 import argparse
 from utils.evaluation import *
 from model.FAN import FAN
-from utils.dataset import process_annot, FaceSynthetics
+from model.Regression import RegressionModel
+from utils.dataset import get_test_dataset
 from utils.tool import load_parameters
 from utils.visualize import read_img, plot_keypoints
 import matplotlib.pyplot as plt
 import random
+from cfg import cfg
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--num_HG', type=int, default=4)
+    # parser.add_argument('--num_HG', type=int, default=4)
     parser.add_argument('--model_path', type=str)
     parser.add_argument('--type', type=str, default="val")
     parser.add_argument('--plot_img', type=int, default=10)
@@ -20,19 +23,27 @@ def main():
     parser.add_argument('--show_line', action="store_true")
     args = parser.parse_args()
 
-    # Data parameters
+    ### Data parameters ##
     annot_path = f"./data/{args.type}_annot.pkl"
     data_path = f"./data/{args.type}"
-    # image parameters
+    model_path = args.model_path
+    ### image parameters ##
     show_line = args.show_line
     show_index = args.show_index
+    ### model setting ###
+    model_type = cfg['model_type']
+    backbone = cfg['backbone']
+    num_HG = cfg['num_HG']
 
-    images, labels, gt_labels = process_annot(annot_path)
-    test_set = FaceSynthetics(data_path, images, labels, gt_labels, "test")
-
+    test_set = get_test_dataset(data_path, annot_path, model_type)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = FAN(num_HG=args.num_HG)
-    load_parameters(model, args.model_path)
+    # Create model
+    if model_type == "classifier":
+        model = FAN(num_HG=num_HG)
+    elif model_type == "regressor":
+        model = RegressionModel(backbone)
+
+    load_parameters(model, model_path)
 
     model = model.to(device)
     model.eval()
@@ -45,7 +56,8 @@ def main():
             img, _ , gt_label = test_set.__getitem__(i)
             img = img.to(device).unsqueeze(dim=0)
             outputs = model(img)
-            pred = heatmap_to_landmark(outputs)
+            if model_type == "classifier":
+                pred = heatmap_to_landmark(outputs)
             pred = pred[0]
             NME_loss = NME(pred, gt_label)
 

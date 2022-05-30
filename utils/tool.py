@@ -64,7 +64,7 @@ def load_parameters(model, path):
     print("End of loading !!!")
 
 
-def val(model, test_loader, device):
+def val(model, test_loader, device, model_type:str):
     print("Starting Validation....")
     
     model = model.to(device)
@@ -80,7 +80,8 @@ def val(model, test_loader, device):
             # loss = 0
             # for output in outputs:
             #     loss += criterion(output, label)
-            pred = heatmap_to_landmark(outputs)
+            if model_type == "classifier":
+                pred = heatmap_to_landmark(outputs)
             pred_loss = NME(pred, gt_label, average=False)
             num_data += data.shape[0]
             total_NME_loss += pred_loss
@@ -88,7 +89,7 @@ def val(model, test_loader, device):
     print(f"Average NME Loss : {total_NME_loss / num_data:.4f}")
     return total_NME_loss / num_data
 
-def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, exp_name="", only_save_best=False):
+def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, model_type:str, exp_name="", only_save_best=False):
     start_train = time.time()
     
     overall_loss = []
@@ -96,11 +97,14 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
     if exp_name == "":
         writer = SummaryWriter()
     else:
-        writer = SummaryWriter("./runs/" + exp_name)
+        mkdir_if_exist(f"./{model_type}")
+        mkdir_if_exist(f"./{model_type}/runs/")
+        writer = SummaryWriter(f"./{model_type}/runs/" + exp_name)
     global_training_step = 0
     global_validation_step = 0
-    # Create directory for saving model
-    mkdir_if_exist("./save")
+    # Create directory for saving model.
+    os.makedirs(save_path,exist_ok=True)
+
     # Best NME loss and epoch for save best .pt
     best_val_NME_loss = 999
     best_epoch = 0
@@ -123,9 +127,12 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
             outputs = model(data) 
             # intermediate supervision
             loss = 0
-            num_target = (label != 0).sum()
-            for output in outputs:
-                loss += criterion(output, label) / num_target
+            if model_type == "classifier":
+                num_target = (label != 0).sum()
+                for output in outputs:
+                    loss += criterion(output, label) / num_target
+            elif model_type == "regressor":
+                loss += criterion(output, label)
             train_loss += loss.item()
             optimizer.zero_grad()
             loss.backward()
@@ -137,7 +144,9 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                             global_step=global_training_step)
             
             # Calculate gt loss with groud truth label
-            pred_label = heatmap_to_landmark(outputs)
+            if model_type == "classifier":
+                pred_label = heatmap_to_landmark(outputs)
+
             NME_loss = NME(pred_label, gt_label)
             writer.add_scalar(tag="train/NME_step_loss",
                             scalar_value=float(NME_loss), 
@@ -168,16 +177,20 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                 outputs = model(data)
                 # intermediate supervision
                 loss = 0
-                num_target = (label != 0).sum()
-                for output in outputs:
-                    loss += criterion(output, label) / num_target
+                if model_type == "classifier":
+                    num_target = (label != 0).sum()
+                    for output in outputs:
+                        loss += criterion(output, label) / num_target
+                elif model_type == "regressor":
+                    loss += criterion(output, label)
                 val_loss += loss.item()
                 writer.add_scalar(tag="val/step_loss",
                             scalar_value=float(loss), 
                             global_step=global_validation_step)
 
                 # Calculate loss with groud truth label
-                pred_label = heatmap_to_landmark(outputs)
+                if model_type == "classifier":
+                    pred_label = heatmap_to_landmark(outputs)
                 NME_loss =  NME(pred_label, gt_label)
                 writer.add_scalar(tag="val/NME_step_loss",
                                 scalar_value=float(NME_loss), 
@@ -195,7 +208,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                             global_step=epoch)
             overall_val_loss.append(float(val_loss))
         # Testing part
-        test_NME_loss = val(model, test_loader, device)
+        test_NME_loss = val(model, test_loader, device, model_type)
         writer.add_scalar(tag="test/NME_loss",
                                 scalar_value=float(test_NME_loss), 
                                 global_step=epoch)

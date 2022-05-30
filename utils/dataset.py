@@ -1,3 +1,4 @@
+from pyexpat import model
 import torch
 from torch.utils.data import Dataset
 from utils.transform import get_transform
@@ -7,7 +8,7 @@ from PIL import Image
 import os
 import random
 import math
-
+import copy
 def process_label(origin_label:np.ndarray):
     # Wrong Label
     if (origin_label >= 384).any() or (origin_label < 0).any():
@@ -42,11 +43,12 @@ def process_label(origin_label:np.ndarray):
     label = label.astype(np.int32)
     return True, label
 
-def process_annot(annot_path:str):
+def process_annot(annot_path:str, model_type:str):
     """Read the annot file and process label(e.g. discard wrong label)
     """
     path = os.path.dirname(annot_path)
-    cached_file = os.path.basename(annot_path).split('.')[0] + '(processing)' + 'pkl'
+    file_name = os.path.basename(annot_path).split('.')[0]
+    cached_file = f'cached_{file_name}_{model_type}.pkl'
     cached_file = os.path.join(path, cached_file)
     
 
@@ -57,13 +59,19 @@ def process_annot(annot_path:str):
         import pickle5 as pickle
     else:
         import pickle
+
+    if model_type == "regressor":
+        images, labels = pickle.load(open(annot_path, 'rb'))
+        return images, labels, copy.deepcopy(labels)
+    
+    ### The code below are for model_type == "classifier" ###
+
     # If cached file exists, then load it.
     if os.path.isfile(cached_file):
         return pickle.load(open(cached_file, 'rb'))
     else:
         images, labels = pickle.load(open(annot_path, 'rb'))
     
-
     valid_imgs = []
     valid_labels = []
     gt_labels = []
@@ -73,6 +81,7 @@ def process_annot(annot_path:str):
             valid_imgs.append(img)
             valid_labels.append(result[1])
             gt_labels.append(label)
+
     
     valid_labels = np.stack(valid_labels)
     gt_labels = np.stack(gt_labels)
@@ -82,8 +91,7 @@ def process_annot(annot_path:str):
 
     return valid_imgs, valid_labels, gt_labels
 
-
-def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0, transform:dict=None):
+def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0, model_type="classifier",transform:dict=None):
     """Get training set and valiating set
     Args:
         data_root: the data root for images
@@ -91,9 +99,8 @@ def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_ima
         train_size: the size ratio of train:val
         use_image_ratio: how many images to use in training and validation
     """
-    images, labels, gt_labels = process_annot(annot_path)
+    images, labels, gt_labels = process_annot(annot_path, model_type=model_type)
     
-
     # Split train/val set
     idxs = [i for i in range(int(len(images) * use_image_ratio))]
     random.shuffle(idxs)
@@ -110,13 +117,27 @@ def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_ima
     val_labels = labels[val_idxs]
     val_gt_labels = gt_labels[val_idxs]
 
-    train_dataset = FaceSynthetics(data_root, train_images, train_labels, train_gt_labels, 'train')
-    val_dataset = FaceSynthetics(data_root, val_images, val_labels, val_gt_labels, 'val')
+    train_dataset = FaceSynthetics(data_root=data_root, 
+                                    images=train_images,
+                                    labels=train_labels,
+                                    gt_labels=train_gt_labels,
+                                    model_type=model_type,
+                                    transform='train')
+    val_dataset = FaceSynthetics(data_root=data_root, 
+                                    images=val_images,
+                                    labels=val_labels,
+                                    gt_labels=val_gt_labels,
+                                    model_type=model_type,
+                                    transform='val')
     return train_dataset, val_dataset
 
+def get_test_dataset(data_path:str, annot_path:str, model_type:str):
+    images, labels, gt_labels = process_annot(annot_path, model_type)
+    return FaceSynthetics(data_path, images, labels, gt_labels, "test")
+
 class Heatmap_converter(object):
-    def __init__(self, img_size=384/4, window_size=7, sigma=1.75):
-        self.img_size = img_size
+    def __init__(self, heatmap_size=96, window_size=7, sigma=1.75):
+        self.heatmap_size = heatmap_size
         self.window_size = window_size
         self.pad_w = window_size // 2
         self.sigma = sigma
@@ -133,37 +154,49 @@ class Heatmap_converter(object):
         Args:
             landmark: a torch tensor has shape(68,2)
         """
-        heatmap = torch.zeros((landmark.shape[0], self.img_size, self.img_size)).float()
+        heatmap = torch.zeros((landmark.shape[0], self.heatmap_size, self.heatmap_size)).float()
         for i, (x, y) in enumerate(landmark):
             
             ul_h  = (max(y - self.pad_w, 0), max(x - self.pad_w, 0)) # upper left point on heatmap
-            lr_h = (min(y + self.pad_w + 1, self.img_size), min(x + self.pad_w + 1, self.img_size)) # lower right point on heatmap
+            lr_h = (min(y + self.pad_w + 1, self.heatmap_size), min(x + self.pad_w + 1, self.heatmap_size)) # lower right point on heatmap
 
             ul_k = (0 if (y - self.pad_w) > 0 else -1 * (y - self.pad_w), # upper left point on kernel
                     0 if (x - self.pad_w) > 0 else -1 * (x - self.pad_w)) 
 
  
-            lr_k = ((self.window_size - max(-1 * ((self.img_size - 1) - (y + self.pad_w)), 0)), # lower right point on kernel
-                    (self.window_size - max(-1 * ((self.img_size - 1) - (x + self.pad_w)), 0)))
+            lr_k = ((self.window_size - max(-1 * ((self.heatmap_size - 1) - (y + self.pad_w)), 0)), # lower right point on kernel
+                    (self.window_size - max(-1 * ((self.heatmap_size - 1) - (x + self.pad_w)), 0)))
             heatmap[i, ul_h[0]:lr_h[0], ul_h[1]:lr_h[1]] = self.kernel[ul_k[0]:lr_k[0], ul_k[1]:lr_k[1]]
 
         return heatmap
 
 class FaceSynthetics(Dataset):
-    def __init__(self, data_root:str, images:list, labels:np.ndarray, gt_labels:np.ndarray, transform="train", heatmap_size=96) -> None:
+    def __init__(self, data_root:str, images:list, labels:np.ndarray, gt_labels:np.ndarray, transform="train", model_type="classifier", heatmap_size=96) -> None:
+        """
+        Args:
+            data_root: the path of the data
+            images: the path of the images
+            labels: training labels
+            gt_labels: groud truth labels
+            transform: 
+            model_type: the type of model, there are two option: "regrssion" or "classifier"
+            heatmap_size: when model type == "classifier", then use this argument for generate heatmap
+        """
         super(FaceSynthetics, self).__init__()
         self.data_root = data_root
-        
+        self.model_type = model_type
         # transform
-        self.transform = get_transform(transform)
+        self.transform = get_transform(model_type=self.model_type,
+                                        transform=transform)
         # data
         self.images = images
         self.labels= torch.tensor(labels)
         self.gt_labels = torch.tensor(gt_labels)
         self.num_classes = len(self.labels[0])
         # heatmap converter
-        self.converter = Heatmap_converter(heatmap_size)
-        self.heatmap_size = heatmap_size
+        if self.model_type == "classifier":
+            self.converter = Heatmap_converter(heatmap_size)
+            self.heatmap_size = heatmap_size
 
     def __len__(self):
         return len(self.images)
@@ -174,5 +207,6 @@ class FaceSynthetics(Dataset):
         im = Image.open(img_path)
         im, label, gt_label = self.transform(im, self.labels[idx], self.gt_labels[idx])
         # transform point to heatmap
-        label = self.converter.convert(label)
+        if self.model_type == "classifier":
+            label = self.converter.convert(label)
         return im, label, gt_label
