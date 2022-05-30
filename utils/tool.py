@@ -97,9 +97,9 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
     if exp_name == "":
         writer = SummaryWriter()
     else:
-        mkdir_if_exist(f"./{model_type}")
-        mkdir_if_exist(f"./{model_type}/runs/")
-        writer = SummaryWriter(f"./{model_type}/runs/" + exp_name)
+        path = f"./runs/{model_type}"
+        os.makedirs(path,exist_ok=True)
+        writer = SummaryWriter(os.path.join(path, exp_name))
     global_training_step = 0
     global_validation_step = 0
     # Create directory for saving model.
@@ -218,17 +218,15 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
         # Display the results
         end_time = time.time()
         elp_time = end_time - start_time
-        min = elp_time // 60 
-        sec = elp_time % 60
-        print('*'*10)
-        print('time = {:.4f} MIN {:.4f} SEC, total time = {:.4f} Min {:.4f} SEC '.format(elp_time // 60, elp_time % 60, (end_time-start_train) // 60, (end_time-start_train) % 60))
+        print('='*24)
+        print('time = {} MIN {:.1f} SEC, total time = {} Min {:.1f} SEC '.format(elp_time // 60, elp_time % 60, (end_time-start_train) // 60, (end_time-start_train) % 60))
         formatted_str = "{: <20} : {:.6f}"
         print(formatted_str.format('Training loss', train_loss))
         print(formatted_str.format('Training NME loss', train_NME_loss))
         print(formatted_str.format('Validating loss', val_loss))
         print(formatted_str.format('Validating NME loss', val_NME_loss))
         print(formatted_str.format('Testing NME loss', test_NME_loss))
-        print('========================\n')
+        print('='*24 + '\n')
 
         if val_NME_loss < best_val_NME_loss:
             best_val_NME_loss = val_NME_loss

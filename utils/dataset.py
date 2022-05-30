@@ -187,7 +187,7 @@ class FaceSynthetics(Dataset):
         self.model_type = model_type
         # transform
         self.transform = get_transform(model_type=self.model_type,
-                                        transform=transform)
+                                        data_type=transform)
         # data
         self.images = images
         self.labels= torch.tensor(labels)
