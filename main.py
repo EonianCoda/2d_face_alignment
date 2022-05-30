@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from utils.model import FAN
+from model.FAN import FAN
 from utils.dataset import FaceSynthetics, get_train_val_dataset, process_annot
 from utils.tool import Warmup_ReduceLROnPlateau, fixed_seed, train
 from cfg import cfg

@@ -1,6 +1,5 @@
 import cv2
 import torch
-import os
 import numpy as np
 def read_img(im_path:str):
     return cv2.imread(im_path)

@@ -2,7 +2,7 @@ import torch
 import os
 import argparse
 from utils.evaluation import *
-from utils.model import FAN
+from model.FAN import FAN
 from utils.dataset import process_annot, FaceSynthetics
 from utils.tool import load_parameters
 from utils.visualize import read_img, plot_keypoints

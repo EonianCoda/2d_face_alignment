@@ -54,7 +54,6 @@ class ConvBlock(nn.Module):
 
         return out3
 
-
 class HourGlassNet(nn.Module):
     def __init__(self, depth:int, num_feats:int):
         super(HourGlassNet, self).__init__()
