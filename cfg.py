@@ -18,6 +18,6 @@ cfg = {
     # Training hyperparameters
     'seed': 987,
     'batch_size': 8,
-    'lr': 1e-4,
-    'epoch':10,
+    'lr': 1e-3,
+    'epoch':20,
 }
