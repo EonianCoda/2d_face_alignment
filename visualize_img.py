@@ -57,6 +57,8 @@ def main():
             outputs = model(img)
             if model_type == "classifier":
                 pred = heatmap_to_landmark(outputs)
+            else:
+                pred = outputs.detach().cpu()
             pred = pred[0]
             NME_loss = NME(pred, gt_label)
 
