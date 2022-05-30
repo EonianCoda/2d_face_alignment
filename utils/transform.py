@@ -1,3 +1,4 @@
+from lib2to3.pgen2.token import LBRACE
 import torch
 from torchvision.transforms import transforms
 import torchvision.transforms.functional as F
@@ -98,7 +99,7 @@ class RandomNoise(object):
         self.prob = prob
         self.ratio = ratio
     def __call__(self, img):
-        h, w, c = img.shape
+        c, h, w = img.shape
         if random.random() < self.prob:
             noise_num = int(random.random() * self.ratio * h * w)
             for _ in range(noise_num):
@@ -106,9 +107,9 @@ class RandomNoise(object):
                 pos_x = int((w - 1) * random.random())
                 pos_y = int((h - 1) * random.random())
                 if prob > 0.5:
-                    img[pos_y, pos_x,:] = 0.0
+                    img[:,pos_y, pos_x] = 0.0
                 else:
-                    img[pos_y, pos_x,:] = 1.0 
+                    img[:,pos_y, pos_x] = 1.0 
         return img
 
 class Transform(object):
@@ -123,7 +124,8 @@ class Transform(object):
             self.random_noise = RandomNoise()
             self.random_rotation = RandomRoation()
     def __call__(self, img, label, gt_label):
-        
+        label = label.clone()
+        gt_label = gt_label.clone()
         if self.is_train:
             # # Random flip
             # img, label, gt_label = self.random_flip(img, label, gt_label)
