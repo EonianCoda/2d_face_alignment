@@ -5,12 +5,11 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from model.FAN import FAN
 from model.Regression import RegressionModel
-from utils.dataset import FaceSynthetics, get_train_val_dataset, process_annot
+from utils.dataset import get_train_val_dataset, get_test_dataset
 from utils.tool import Warmup_ReduceLROnPlateau, fixed_seed, train
 from cfg import cfg
 
 import argparse
-import os
 
 def main():
     parser = argparse.ArgumentParser()
@@ -24,7 +23,6 @@ def main():
     train_data_root = cfg['train_data_root']
     train_annot = cfg['train_annot']
     use_image_ratio = args.use_image_ratio
-
     test_data_root = cfg['test_data_root']
     test_annot = cfg['test_annot']
     ### model setting ###
@@ -88,13 +86,7 @@ def main():
     model = model.to(device)
     
     # Testing data
-    images, labels, gt_labels = process_annot(test_annot, model_type)
-    test_set = FaceSynthetics(data_root=test_data_root, 
-                                images=images,
-                                labels=labels,
-                                gt_labels=gt_labels,
-                                model_type=model_type,
-                                transform='test')
+    test_set = get_test_dataset(test_data_root, test_annot, model_type)
     test_loader = DataLoader(test_set, batch_size=batch_size, num_workers= 2, pin_memory=True)
     train(model=model,
         train_loader=train_loader,
