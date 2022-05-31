@@ -21,11 +21,10 @@ def main():
     data_path = f"./data/{args.type}"
     model_path = args.model_path
     ### model setting ###
-    model_type = cfg['model_type']
-    backbone = cfg['backbone']
+    model_type = cfg['model_type'][cfg['model_type_idx']]
+    backbone = cfg['backbone'][cfg['backbone_idx']]
     num_HG = cfg['num_HG']
-
-    batch_size = cfg['batch_size']
+    batch_size = cfg['batch_size'][model_type] * 2
 
 
     test_set = get_test_dataset(data_path, annot_path, model_type)

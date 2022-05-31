@@ -17,6 +17,7 @@ def NME(pred, gt, average=True) -> float:
         dist = np.sum(dist)
     dist /= 384
     return float(dist)
+
 def heatmap_to_landmark(heatmap):
     """Convert the model output to keypoints
     """

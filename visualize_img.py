@@ -30,8 +30,8 @@ def main():
     show_line = args.show_line
     show_index = args.show_index
     ### model setting ###
-    model_type = cfg['model_type']
-    backbone = cfg['backbone']
+    model_type = cfg['model_type'][cfg['model_type_idx']]
+    backbone = cfg['backbone'][cfg['backbone_idx']]
     num_HG = cfg['num_HG']
 
     test_set = get_test_dataset(data_path, annot_path, model_type)

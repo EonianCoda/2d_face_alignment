@@ -26,16 +26,17 @@ def main():
     test_data_root = cfg['test_data_root']
     test_annot = cfg['test_annot']
     ### model setting ###
-    model_type = cfg['model_type']
-    backbone = cfg['backbone']
+    model_type = cfg['model_type'][cfg['model_type_idx']]
+    backbone = cfg['backbone'][cfg['backbone_idx']]
+
     num_HG = cfg['num_HG']
     ### training hyperparameter ###
     scheduler_type = cfg['scheduler_type']
-    batch_size =  cfg['batch_size']
+    batch_size =  cfg['batch_size'][model_type]
     split_ratio = cfg['split_ratio']
     epoch = cfg['epoch']
     seed = cfg['seed']
-    lr = cfg['lr']
+    lr = cfg['lr'][model_type]
     
 
     ### Logging parameter ###
@@ -49,6 +50,7 @@ def main():
     if model_type == "classifier":
         model = FAN(num_HG=num_HG)
     elif model_type == "regressor":
+
         model = RegressionModel(backbone)
         
     # Create train/val set
