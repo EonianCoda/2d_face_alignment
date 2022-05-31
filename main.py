@@ -9,6 +9,7 @@ from model.Regression import RegressionModel
 from utils.dataset import get_train_val_dataset, get_test_dataset
 from utils.tool import fixed_seed, load_parameters, train
 from utils.scheduler import Warmup_ReduceLROnPlateau
+from loss.wing_loss import Adaptive_Wing_Loss, Wing_Loss
 from cfg import *
 
 import argparse
@@ -36,6 +37,7 @@ def main():
     if model_type == "classifier":
         cfg.update(classifier_cfg)
         num_HG = cfg['num_HG']
+        HG_depth = cfg['HG_depth']
     elif model_type == "regressor":
         cfg.update(regressor_cfg)
         backbone = cfg['backbone'][cfg['backbone_idx']]
@@ -48,6 +50,7 @@ def main():
     epoch = cfg['epoch']
     seed = cfg['seed']
     lr = cfg['lr']
+    loss = cfg['losses'][cfg['loss_idx']]
     ### Resume ###
     resume = args.resume
     resume_epoch = args.resume_epoch
@@ -62,7 +65,7 @@ def main():
 
     # Create model
     if model_type == "classifier":
-        model = FAN(num_HG=num_HG)
+        model = FAN(num_HG=num_HG, HG_depth=HG_depth)
     elif model_type == "regressor":
         model = RegressionModel(backbone, dropout=dropout)
     # Create train/val set
@@ -82,14 +85,25 @@ def main():
                                         lr=lr,
                                         momentum=0.9, 
                                         weight_decay=1e-6)
-        criterion = nn.MSELoss(reduction="sum")
-
     elif model_type == "regressor":
         optimizer = torch.optim.RMSprop(model.parameters(),
                                         lr=lr,
                                         momentum=0.9, 
                                         weight_decay=1e-6)
-        criterion = nn.MSELoss()
+    # Loss
+    if loss == "L2":
+        if model_type == "classifier":
+            criterion = nn.MSELoss(reduction="sum")
+        elif model_type == "regressor":
+            criterion = nn.MSELoss()
+    elif loss == "L1":
+        criterion = nn.L1Loss()
+    elif loss == "smooth_L1":
+        criterion = nn.SmoothL1Loss()
+    elif loss == "wing_loss":
+        criterion = Wing_Loss()
+    elif loss == "adaptive_wing_loss":
+        criterion = Adaptive_Wing_Loss()
     
     # Scheduler
     if scheduler_type == 0:
@@ -124,6 +138,7 @@ def main():
         scheduler=scheduler,
         optimizer=optimizer,
         model_type=model_type,
+        loss_type=loss,
         exp_name=exp_name,
         only_save_best=only_save_best,
         resume_epoch=resume_epoch)

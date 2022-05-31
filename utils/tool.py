@@ -71,7 +71,8 @@ def val(model, test_loader, device, model_type:str):
 
     return (total_NME_loss / num_data), (total_NEM_loss_68 / num_data)
 
-def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, model_type:str, exp_name="", only_save_best=False, resume_epoch=-1):
+def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, 
+    scheduler, optimizer, model_type:str, loss_type:str, exp_name="", only_save_best=False, resume_epoch=-1):
     start_train = time.time()
     # Print training information
     print("Start training!!")
@@ -128,9 +129,13 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
             # intermediate supervision
             loss = 0
             if model_type == "classifier":
-                num_target = (label != 0).sum()
-                for output in outputs:
-                    loss += criterion(output, label) / num_target
+                if loss_type =="L2":
+                    num_target = (label != 0).sum()
+                    for output in outputs:
+                        loss += criterion(output, label) / num_target
+                elif loss_type == "wing_loss":
+                    for output in outputs:
+                        loss += criterion(output, label)
             elif model_type == "regressor":
                 loss += criterion(outputs, label)
             train_loss += loss.item()
@@ -180,9 +185,13 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                 # intermediate supervision
                 loss = 0
                 if model_type == "classifier":
-                    num_target = (label != 0).sum()
-                    for output in outputs:
-                        loss += criterion(output, label) / num_target
+                    if loss_type =="L2":
+                        num_target = (label != 0).sum()
+                        for output in outputs:
+                            loss += criterion(output, label) / num_target
+                    elif loss_type == "wing_loss":
+                        for output in outputs:
+                            loss += criterion(output, label)
                 elif model_type == "regressor":
                     loss += criterion(outputs, label)
                 val_loss += loss.item()
