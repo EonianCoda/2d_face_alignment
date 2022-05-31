@@ -1,14 +1,16 @@
-from pyexpat import model
+from operator import imatmul
 import torch
 from torch.utils.data import Dataset
-from utils.transform import get_transform
+from torchvision.transforms import transforms
+from PIL import Image
 import numpy as np
 from platform import python_version
-from PIL import Image
 import os
 import random
 import math
 import copy
+from utils.transform import get_transform
+
 def process_label(origin_label:np.ndarray):
     # Wrong Label
     if (origin_label >= 384).any() or (origin_label < 0).any():
@@ -146,6 +148,11 @@ def get_test_dataset(data_path:str, annot_path:str, model_type:str):
                                     transform='test')
     return test_dataset
 
+def get_pred_dataset(data_path:str):
+    images = os.listdir(data_path)
+    test_dataset = Predicting_FaceSynthetics(data_root=data_path, images=images)
+    return test_dataset
+
 class Heatmap_converter(object):
     def __init__(self, heatmap_size=96, window_size=7, sigma=1.75):
         self.heatmap_size = heatmap_size
@@ -221,3 +228,31 @@ class FaceSynthetics(Dataset):
         if self.model_type == "classifier":
             label = self.converter.convert(label)
         return im, label, gt_label
+
+class Predicting_FaceSynthetics(Dataset):
+    def __init__(self, data_root:str, images:list) -> None:
+        """
+        Args:
+            data_root: the path of the data
+            images: the path of the images
+            labels: training labels
+        """
+        super(FaceSynthetics, self).__init__()
+        self.data_root = data_root
+        # transform
+        means = [0.485, 0.456, 0.406]
+        stds = [0.229, 0.224, 0.225]
+        self.transform =  transforms.Compose([transforms.ToTensor(),
+                                                transforms.Normalize(means, stds)])
+        # data
+        self.images = images
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, idx:int):
+        # Read imagee
+        img_path = os.path.join(self.data_root, self.images[idx])
+        im = Image.open(img_path)
+        im = self.transform(im)
+        return im

@@ -97,12 +97,18 @@ def main():
         elif model_type == "regressor":
             criterion = nn.MSELoss()
     elif loss == "L1":
+        if model_type == "classifier":
+            raise ValueError("If model type == 'classifier', then loss cannot be L1")
         criterion = nn.L1Loss()
     elif loss == "smooth_L1":
+        if model_type == "classifier":
+            raise ValueError("If model type == 'classifier', then loss cannot be smooth_L1")
         criterion = nn.SmoothL1Loss()
     elif loss == "wing_loss":
         criterion = Wing_Loss()
     elif loss == "adaptive_wing_loss":
+        if model_type == "regressor":
+            raise ValueError("If model type == 'regressor', then loss cannot be Adaptive_Wing_Loss")
         criterion = Adaptive_Wing_Loss()
     
     # Scheduler

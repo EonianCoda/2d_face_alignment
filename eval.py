@@ -26,6 +26,7 @@ def main():
     if model_type == "classifier":
         cfg.update(classifier_cfg)
         num_HG = cfg['num_HG']
+        HG_depth = cfg['HG_depth']
     elif model_type == "regressor":
         cfg.update(regressor_cfg)
         backbone = cfg['backbone'][cfg['backbone_idx']]
@@ -39,7 +40,7 @@ def main():
 
     # Create model
     if model_type == "classifier":
-        model = FAN(num_HG=num_HG)
+        model = FAN(num_HG=num_HG, HG_depth=HG_depth)
     elif model_type == "regressor":
         model = RegressionModel(backbone, dropout=dropout)
 

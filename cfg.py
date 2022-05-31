@@ -4,6 +4,13 @@ cfg = {
     'model_type_idx': 0,
     'model_type': {0 : 'classifier',
                    1 : 'regressor'},
+    'loss_idx': 2,
+    'losses': {0:"L2",
+                1:"L1",
+                2:"smoothL1",
+                3:"wing_loss",
+                4:"adaptive_wing_loss"},
+
     ### Scheduler setting ###
     'scheduler_type': 1,  # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
     'warm_epoch': 2,   # If scheduler == 1, then use warm_epoch arg
@@ -19,7 +26,6 @@ cfg = {
     'test_data_root':'./data/val',
     
     'seed': 987,
-    'epoch':10,
 }
 
 classifier_cfg = {
@@ -27,11 +33,8 @@ classifier_cfg = {
     'HG_depth':4,
     ### Training hyperparameters ###
     'batch_size': 8,
-    'loss_idx': 0,
-    'losses': {0:"MSE",
-                1:"wing_loss",
-                2:"adaptive_wing_loss"},
-    'lr':1e-4
+    'lr':1e-4,
+    'epoch':10,
 }
 regressor_cfg = {
     'backbone_idx': 0,
@@ -40,11 +43,7 @@ regressor_cfg = {
                  2: "mobilenet_v3_small"},
     'dropout': 0.2,
     ### Training hyperparameters ###
-    'loss_idx': 2,
-    'losses': {0:"L2",
-                1:"L1",
-                2:"smoothL1",
-                3:"wing_loss"},
     'batch_size': 16,
     'lr': 1e-3,
+    'epoch':20,
 }
