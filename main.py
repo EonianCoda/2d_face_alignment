@@ -30,8 +30,9 @@ def main():
     test_annot = cfg['test_annot']
     ### model setting ###
     model_type = cfg['model_type'][cfg['model_type_idx']]
-    backbone = cfg['backbone'][cfg['backbone_idx']]
     num_HG = cfg['num_HG']
+    backbone = cfg['backbone'][cfg['backbone_idx']]
+    dropout = cfg['dropout']
     ### training hyperparameter ###
     scheduler_type = cfg['scheduler_type']
     batch_size =  cfg['batch_size'][model_type]
@@ -42,7 +43,7 @@ def main():
     ### Resume ###
     resume = args.resume
     resume_epoch = args.resume_epoch
-    resume_model_path = args.model_path
+    resume_model_path = args.resume_model_path
     ### Logging parameter ###
     only_save_best = args.only_save_best
     exp_name = args.exp_name # directory name of the tensorboard
@@ -55,7 +56,7 @@ def main():
     if model_type == "classifier":
         model = FAN(num_HG=num_HG)
     elif model_type == "regressor":
-        model = RegressionModel(backbone)
+        model = RegressionModel(backbone, dropout=dropout)
     # Create train/val set
     print("Loading annotation...")
     train_set, val_set = get_train_val_dataset(data_root=train_data_root, 

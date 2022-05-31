@@ -100,6 +100,12 @@ def val(model, test_loader, device, model_type:str):
 
 def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, model_type:str, exp_name="", only_save_best=False, resume_epoch=-1):
     start_train = time.time()
+    # Print training information
+    print("Start training!!")
+    print(f"Model type = {model_type}")
+    if model_type == "Regressor":
+        print(f"Backbone type = {model_type}")
+    print(f"Length of training dataloader = {len(train_loader)}")
     
     # Create writerr for recording loss
     if exp_name == "":

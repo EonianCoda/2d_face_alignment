@@ -9,7 +9,9 @@ cfg = {
     # If model_type == "regressor", then use this arg 
     'backbone_idx': 0,
     'backbone': {0: "mobilenet_v2",
-                 1: "efficientnet_b0"},
+                 1: "efficientnet_b0",
+                 2: "mobilenet_v3_small"},
+    'dropout': 0.2,
     ### Scheduler setting ###
     'scheduler_type': 1,  # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
     'warm_epoch': 2,   # If scheduler == 1, then use warm_epoch arg
