@@ -8,7 +8,7 @@ from utils.dataset import get_test_dataset
 from utils.tool import load_parameters, val
 from utils.visualize import plot_loss_68
 from cfg import *
-
+import numpy as np
 
 def main():
     parser = argparse.ArgumentParser()
@@ -47,6 +47,7 @@ def main():
     test_NME_loss, test_NME_loss_68 = val(model, test_loader, device, model_type)
     print(f"Average NME Loss : {test_NME_loss:.4f}")
     plot_loss_68(test_NME_loss_68)
+    print(np.argsort(test_NME_loss_68))
 
 if __name__ == "__main__":
     main()

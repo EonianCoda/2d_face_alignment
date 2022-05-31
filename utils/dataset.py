@@ -63,7 +63,7 @@ def process_annot(annot_path:str, model_type:str):
     if model_type == "regressor":
         images, labels = pickle.load(open(annot_path, 'rb'))
         mask = (labels >= 0) & (labels < 384) # shape = (bs, 68, 2)
-        valid_idxs = mask.all(dim=(-1, -2)).nonzero()[0]
+        valid_idxs = mask.all(axis=(-1, -2)).nonzero()[0]
         labels = labels[valid_idxs]
         images = [images[i] for i in valid_idxs]
         

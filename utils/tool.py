@@ -76,7 +76,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
     # Print training information
     print("Start training!!")
     print(f"Model type = {model_type}")
-    if model_type == "Regressor":
+    if model_type == "regressor":
         print(f"Backbone type = {model_type}")
     print(f"Length of training dataloader = {len(train_loader)}")
     
