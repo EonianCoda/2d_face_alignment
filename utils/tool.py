@@ -93,8 +93,12 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
     os.makedirs(save_path,exist_ok=True)
 
     # Best NME loss and epoch for save best .pt
+    best_train_NME_loss = 999
     best_val_NME_loss = 999
-    best_epoch = 0
+    best_test_NME_loss = 999
+    best_train_epoch = 0
+    best_val_epoch = 0
+    best_test_epoch = 0
 
     # Set start epoch and end epoch
     if resume_epoch != -1:
@@ -241,9 +245,15 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
         print(formatted_str.format('Testing NME loss', test_NME_loss))
         print('='*24 + '\n')
 
+        if train_NME_loss < best_train_NME_loss:
+            best_train_NME_loss = train_NME_loss
+            best_train_epoch = epoch
+        if test_NME_loss < best_test_NME_loss:
+            best_test_NME_loss = test_NME_loss
+            best_test_epoch = epoch
         if val_NME_loss < best_val_NME_loss:
             best_val_NME_loss = val_NME_loss
-            best_epoch = epoch
+            best_val_epoch = epoch
             torch.save(model.state_dict(), os.path.join(save_path, 'best.pt'))
         if not only_save_best:
             torch.save(model.state_dict(), os.path.join(save_path, f'{epoch}.pt'))
@@ -253,5 +263,6 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
 
     writer.close()
     print("End of training !!!")
-    print(f"Best Epoch = {best_epoch}")
-    print(f"Best val NEM loss = {best_val_NME_loss:.6f}")
+    print(f"Best training NEM loss {best_train_NME_loss:.6f} on epoch {best_train_epoch}")
+    print(f"Best validating NEM loss {best_val_NME_loss:.6f} on epoch {best_val_epoch}")
+    print(f"Best testing NEM loss {best_test_NME_loss:.6f} on epoch {best_test_epoch}")
