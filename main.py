@@ -17,7 +17,7 @@ def main():
     parser.add_argument('--use_image_ratio', type=float, default=1.0)
     parser.add_argument('--exp_name', help="the name of the experiment", default="", type=str)
     parser.add_argument('--resume', action="store_true")
-    parser.add_argument('--resume_epoch', type=int, default=0)
+    parser.add_argument('--resume_epoch', type=int, default=-1)
     parser.add_argument('--resume_model_path', help="the path of model weight for resuming training", type=str, default="")
     parser.add_argument('--only_save_best', help="save all .pt or just save best result", action="store_true")
     args = parser.parse_args()
