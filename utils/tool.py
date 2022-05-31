@@ -147,7 +147,6 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), max_norm= 5.)
             optimizer.step()
-            scheduler.step()
             writer.add_scalar(tag="train/step_loss",
                             scalar_value=float(loss),
                             global_step=global_training_step)
@@ -231,7 +230,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                                 scalar_value=float(test_NME_loss), 
                                 global_step=epoch)
         # Scheduler steping
-        scheduler.step_loss(val_loss)
+        scheduler.step(val_loss)
 
         # Display the results
         end_time = time.time()
@@ -268,13 +267,14 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
     print(f"Best validating NME loss {best_val_NME_loss:.6f} on epoch {best_val_epoch}")
     print(f"Best testing NME loss {best_test_NME_loss:.6f} on epoch {best_test_epoch}")
 
-    train_hyp['best/train_NME_loss'] = best_train_NME_loss
-    train_hyp['best/val_NME_loss'] = best_val_NME_loss
-    train_hyp['best/val_epoch'] = best_val_epoch
-    train_hyp['best/test_NME_loss'] = best_test_NME_loss
-    train_hyp['best/test_epoch'] = best_test_epoch
-    train_hyp['end epoch'] = end_epoch
+    metric_result = dict()
+    metric_result['best/train_NME_loss'] = best_train_NME_loss
+    metric_result['best/val_NME_loss'] = best_val_NME_loss
+    metric_result['best/val_epoch'] = best_val_epoch
+    metric_result['best/test_NME_loss'] = best_test_NME_loss
+    metric_result['best/test_epoch'] = best_test_epoch
+    metric_result['end epoch'] = end_epoch
 
-    writer.add_hparams(train_hyp)
+    writer.add_hparams(train_hyp, metric_result)
 
     writer.close()

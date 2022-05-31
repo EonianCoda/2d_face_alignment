@@ -4,7 +4,7 @@ cfg = {
     'model_type_idx': 0,
     'model_type': {0 : 'classifier',
                    1 : 'regressor'},
-    'loss_idx': 2,
+    'loss_idx': 0,
     'losses': {0:"L2",
                 1:"L1",
                 2:"smoothL1",
@@ -13,7 +13,7 @@ cfg = {
 
     ### Scheduler setting ###
     'scheduler_type': 1,  # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
-    'warm_step': 3,   # If scheduler == 1, then use warm_epoch arg
+    'warm_step': 2,   # If scheduler == 1, then use warm_epoch arg
     'patience': 3,
     ### training setting ##
     'train_annot':'./data/train_annot.pkl',
@@ -31,11 +31,11 @@ cfg = {
 
 classifier_cfg = {
     'num_HG': 1,
-    'HG_depth':4,
+    'HG_depth':2,
     ### Training hyperparameters ###
     'batch_size': 8,
     'lr':1e-4,
-    'epoch':10,
+    'epoch':20,
 }
 regressor_cfg = {
     'backbone_idx': 0,
