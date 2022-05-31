@@ -9,7 +9,7 @@ from utils.tool import load_parameters
 from utils.visualize import read_img, plot_keypoints
 import matplotlib.pyplot as plt
 import random
-from cfg import cfg
+from cfg import *
 
 
 def main():
@@ -29,10 +29,17 @@ def main():
     ### image parameters ##
     show_line = args.show_line
     show_index = args.show_index
+
     ### model setting ###
     model_type = cfg['model_type'][cfg['model_type_idx']]
-    backbone = cfg['backbone'][cfg['backbone_idx']]
-    num_HG = cfg['num_HG']
+    if model_type == "classifier":
+        cfg.update(classifier_cfg)
+        num_HG = cfg['num_HG']
+    elif model_type == "regressor":
+        cfg.update(regressor_cfg)
+        backbone = cfg['backbone'][cfg['backbone_idx']]
+        dropout = cfg['dropout']
+
 
     test_set = get_test_dataset(data_path, annot_path, model_type)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -40,7 +47,7 @@ def main():
     if model_type == "classifier":
         model = FAN(num_HG=num_HG)
     elif model_type == "regressor":
-        model = RegressionModel(backbone)
+        model = RegressionModel(backbone, dropout=dropout)
 
     load_parameters(model, model_path)
 
@@ -57,7 +64,7 @@ def main():
             outputs = model(img)
             if model_type == "classifier":
                 pred = heatmap_to_landmark(outputs)
-            else:
+            elif model_type == "regressor":
                 pred = outputs.detach().cpu()
             pred = pred[0]
             NME_loss = NME(pred, gt_label)

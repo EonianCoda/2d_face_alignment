@@ -7,7 +7,7 @@ from model.FAN import FAN
 from model.Regression import RegressionModel
 from utils.dataset import get_train_val_dataset, get_test_dataset
 from utils.tool import Warmup_ReduceLROnPlateau, fixed_seed, load_parameters, train
-from cfg import cfg
+from cfg import *
 
 import argparse
 
@@ -28,18 +28,24 @@ def main():
     use_image_ratio = args.use_image_ratio
     test_data_root = cfg['test_data_root']
     test_annot = cfg['test_annot']
+
     ### model setting ###
     model_type = cfg['model_type'][cfg['model_type_idx']]
-    num_HG = cfg['num_HG']
-    backbone = cfg['backbone'][cfg['backbone_idx']]
-    dropout = cfg['dropout']
+    if model_type == "classifier":
+        cfg.update(classifier_cfg)
+        num_HG = cfg['num_HG']
+    elif model_type == "regressor":
+        cfg.update(regressor_cfg)
+        backbone = cfg['backbone'][cfg['backbone_idx']]
+        dropout = cfg['dropout']
+
     ### training hyperparameter ###
     scheduler_type = cfg['scheduler_type']
-    batch_size =  cfg['batch_size'][model_type]
+    batch_size =  cfg['batch_size']
     split_ratio = cfg['split_ratio']
     epoch = cfg['epoch']
     seed = cfg['seed']
-    lr = cfg['lr'][model_type]
+    lr = cfg['lr']
     ### Resume ###
     resume = args.resume
     resume_epoch = args.resume_epoch
