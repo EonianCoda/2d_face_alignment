@@ -123,7 +123,7 @@ class RandomNoise(object):
         return img
 
 class Transform(object):
-    def __init__(self, model_type:str, is_train=True):
+    def __init__(self, model_type:str, is_train=True, aug_setting:dict=None):
         self.is_train = is_train
         self.model_type = model_type
         means = [0.485, 0.456, 0.406]
@@ -131,31 +131,42 @@ class Transform(object):
         self.normalize = transforms.Normalize(means, stds)
         
         if self.is_train:
+            if aug_setting == None:
+                raise ValueError("When is_train == 'True', aug setting cannot be None ")
+            self.aug_setting = aug_setting
             self.random_flip = RandomHorizontalFlip(model_type=self.model_type)
             self.random_noise = RandomNoise()
             self.random_rotation = RandomRoation(model_type=self.model_type)
+
+
     def __call__(self, img, label, gt_label):
         label = label.clone()
         gt_label = gt_label.clone()
-        if self.is_train:
-            # # Random flip
-            # img, label, gt_label = self.random_flip(img, label, gt_label)
-            # Random rotation
+        # Random flip
+        if self.is_train and self.aug_setting['flip']:
+            img, label, gt_label = self.random_flip(img, label, gt_label)
+
+        # Random rotation
+        if self.is_train and self.aug_setting['rotation']:
             img, label, gt_label = self.random_rotation(img, label, gt_label)
 
         img = transforms.ToTensor()(img)
 
         # Random noise
-        if self.is_train:
+        if self.is_train and self.aug_setting['noise']:
             img = self.random_noise(img)
 
         img = self.normalize(img)
         return img, label, gt_label
 
 
-def get_transform(model_type:str="classifier", data_type="train"):
+def get_transform(model_type:str="classifier", data_type="train", aug_setting:dict=None):
+
+
     if data_type == "train":
-        transform = Transform(is_train=True, model_type=model_type)
+        transform = Transform(is_train=True, model_type=model_type, aug_setting=aug_setting)
     elif data_type == "test" or data_type == "val":
-        transform = Transform(is_train=False, model_type=model_type)
+        if aug_setting != None:
+            raise ValueError('If data_type == "test" or "val", then aug_setting should be None')
+        transform = Transform(is_train=False, model_type=model_type,)
     return transform

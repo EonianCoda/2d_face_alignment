@@ -51,6 +51,7 @@ def main():
     seed = cfg['seed']
     lr = cfg['lr']
     loss_type = cfg['losses'][cfg['loss_idx']]
+    aug_setting = cfg['aug_setting']
     ### Resume ###
     resume = args.resume
     resume_epoch = args.resume_epoch
@@ -74,7 +75,8 @@ def main():
                                                annot_path=train_annot, 
                                                train_size=split_ratio,
                                                use_image_ratio=use_image_ratio,
-                                               model_type=model_type)
+                                               model_type=model_type,
+                                               aug_setting=aug_setting)
     print("End of Loading annotation!!!")
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers= 2, pin_memory=True, drop_last=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers= 2, pin_memory=True, drop_last=True)
@@ -132,12 +134,17 @@ def main():
             raise ValueError("If resume == True, then resume model path cannot be empty")
         load_parameters(model, resume_model_path, optimizer, scheduler, model_type)
 
+
+    aug = [v for k, v in aug_setting.items() if v]
+    aug = " ".join(aug)
     train_hyp = {'lr':lr, 
                 'bsize': batch_size,
                 'model_type': model_type,
                 'loss_type':loss_type,
                 'use_image_ratio': use_image_ratio,
-                'warm_epoch': warm_epoch}
+                'warm_epoch': warm_epoch,
+                'augmentation':aug}
+
     if model_type == "classifier":
         train_hyp['num_HG'] = num_HG
         train_hyp['HG_depth'] = HG_depth

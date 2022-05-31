@@ -98,7 +98,7 @@ def process_annot(annot_path:str, model_type:str):
 
     return valid_imgs, valid_labels, gt_labels
 
-def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0, model_type="classifier",transform:dict=None):
+def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0, model_type="classifier",aug_setting:dict=None):
     """Get training set and valiating set
     Args:
         data_root: the data root for images
@@ -129,7 +129,8 @@ def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_ima
                                     labels=train_labels,
                                     gt_labels=train_gt_labels,
                                     model_type=model_type,
-                                    transform='train')
+                                    transform='train',
+                                    aug_setting=aug_setting)
     val_dataset = FaceSynthetics(data_root=data_root, 
                                     images=val_images,
                                     labels=val_labels,
@@ -189,7 +190,7 @@ class Heatmap_converter(object):
         return heatmap
 
 class FaceSynthetics(Dataset):
-    def __init__(self, data_root:str, images:list, labels:np.ndarray, gt_labels:np.ndarray, transform="train", model_type="classifier", heatmap_size=96) -> None:
+    def __init__(self, data_root:str, images:list, labels:np.ndarray, gt_labels:np.ndarray, transform="train", model_type="classifier", aug_setting:dict=None, heatmap_size=96) -> None:
         """
         Args:
             data_root: the path of the data
@@ -205,7 +206,8 @@ class FaceSynthetics(Dataset):
         self.model_type = model_type
         # transform
         self.transform = get_transform(model_type=self.model_type,
-                                        data_type=transform)
+                                        data_type=transform,
+                                        aug_setting=aug_setting)
         # data
         self.images = images
         self.labels= torch.tensor(labels)

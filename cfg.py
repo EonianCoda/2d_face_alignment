@@ -18,9 +18,9 @@ cfg = {
     'train_annot':'./data/train_annot.pkl',
     'train_data_root':'./data/train',
     'split_ratio': 0.9,
-    'transform':{'flip':False,
-                 'roation':True,
-                 'noise':True,},
+    'aug_setting':{'flip':False,
+                    'rotation':True,
+                    'noise':True,},
     ### testing data ##
     'test_annot':'./data/val_annot.pkl',
     'test_data_root':'./data/val',
