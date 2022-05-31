@@ -147,7 +147,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), max_norm= 5.)
             optimizer.step()
-
+            scheduler.step()
             writer.add_scalar(tag="train/step_loss",
                             scalar_value=float(loss),
                             global_step=global_training_step)
@@ -164,6 +164,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                             global_step=global_training_step)
             train_NME_loss += NME_loss
             global_training_step += 1
+
             del loss
   
         train_loss /= len(train_loader.dataset)
@@ -230,7 +231,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                                 scalar_value=float(test_NME_loss), 
                                 global_step=epoch)
         # Scheduler steping
-        scheduler.step(val_loss)
+        scheduler.step_loss(val_loss)
 
         # Display the results
         end_time = time.time()

@@ -13,7 +13,8 @@ cfg = {
 
     ### Scheduler setting ###
     'scheduler_type': 1,  # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
-    'warm_epoch': 2,   # If scheduler == 1, then use warm_epoch arg
+    'warm_step': 1000,   # If scheduler == 1, then use warm_epoch arg
+    'patience': 3,
     ### training setting ##
     'train_annot':'./data/train_annot.pkl',
     'train_data_root':'./data/train',

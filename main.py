@@ -117,8 +117,9 @@ def main():
     if scheduler_type == 0:
         scheduler = ReduceLROnPlateau(optimizer, patience=3, verbose=True)
     elif scheduler_type == 1:
-        warm_epoch = cfg['warm_epoch']
-        scheduler = Warmup_ReduceLROnPlateau(optimizer, warm_epoch, patience=3, verbose=True)
+        warm_step = cfg['warm_step']
+        patience = cfg['patience']
+        scheduler = Warmup_ReduceLROnPlateau(optimizer, warm_step, patience=patience, verbose=True)
     model = model.to(device)
     
     # Testing data
@@ -142,7 +143,7 @@ def main():
                 'model_type': model_type,
                 'loss_type':loss_type,
                 'use_image_ratio': use_image_ratio,
-                'warm_epoch': warm_epoch,
+                'warm_step': warm_step,
                 'augmentation':aug}
 
     if model_type == "classifier":
