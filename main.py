@@ -1,12 +1,14 @@
+# Torch
 import torch
 from torch.utils.data import DataLoader
 import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-
+# Model
 from model.FAN import FAN
 from model.Regression import RegressionModel
 from utils.dataset import get_train_val_dataset, get_test_dataset
-from utils.tool import Warmup_ReduceLROnPlateau, fixed_seed, load_parameters, train
+from utils.tool import fixed_seed, load_parameters, train
+from utils.scheduler import Warmup_ReduceLROnPlateau
 from cfg import *
 
 import argparse

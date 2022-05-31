@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from torch.optim.lr_scheduler import _LRScheduler, ReduceLROnPlateau
 from torch.utils.tensorboard import SummaryWriter
 from utils.evaluation import heatmap_to_landmark, NME
 import numpy as np
@@ -13,40 +12,11 @@ def mkdir_if_exist(path:str):
     if not os.path.isdir(path):
         os.mkdir(path)
 
-
-class Warmup_ReduceLROnPlateau(_LRScheduler):
-    def __init__(self, optimizer, warm_up_epoch, patience=3, verbose=True):
-        self.warm_up_epoch = warm_up_epoch
-        self.cur_epoch = 0
-        self.after_scheduler = ReduceLROnPlateau(optimizer, patience=patience)
-        self.verbose = verbose
-        super().__init__(optimizer)
-        self.last_epoch = 0
-
-    def get_lr(self) -> float:
-        if self.last_epoch < self.warm_up_epoch:
-            return [base_lr * (float(self.last_epoch + 1) / self.warm_up_epoch) for base_lr in self.base_lrs]
-        else:
-            return self.after_scheduler._last_lr
-
-    def _print_info(self):
-        for group_idx, lr in enumerate(self.get_lr()):
-            print("Epoch {:4d}: Adjusting learning rate of group {} to {:4e}.".format(self.last_epoch, group_idx, lr))
-
-    def step(self,metric=None):
-        cur_lr = self.get_lr()
-        self.last_epoch = 1 if self.last_epoch == 0 else self.last_epoch + 1
-        if self.last_epoch < self.warm_up_epoch:
-            for param_group, lr in zip(self.optimizer.param_groups, self.get_lr()):
-                param_group['lr'] = lr
-        elif metric != None:
-            self.after_scheduler.step(metric)
-        else:
-            raise ValueError("Currnet epoch is larger than warm up epoch and metirc still is None")
-        if self.verbose and cur_lr != self.get_lr():
-            self._print_info()
-
-def fixed_seed(myseed):
+def fixed_seed(myseed:int):
+    """Initial random seed
+    Args:
+        myseed: the seed for initial
+    """
     np.random.seed(myseed)
     random.seed(myseed)
     torch.manual_seed(myseed)
@@ -76,7 +46,9 @@ def val(model, test_loader, device, model_type:str):
     model.eval()
     # criterion = nn.CrossEntropyLoss()
     total_NME_loss = 0
+    total_NEM_loss_68 = np.zeros(68)
     num_data = 0
+
     for batch_idx, (data, label, gt_label) in enumerate(tqdm(test_loader)):
         with torch.no_grad():
             data = data.to(device)
@@ -90,13 +62,14 @@ def val(model, test_loader, device, model_type:str):
             elif model_type == "regressor":
                 pred = outputs.detach().cpu()
 
-
-            pred_loss = NME(pred, gt_label, average=False)
+            pred_loss, pred_loss_68 = NME(pred, gt_label, average=False, return_68=True)
             num_data += data.shape[0]
             total_NME_loss += pred_loss
+            total_NEM_loss_68 += pred_loss_68.sum(axis=0)
     print("End of validating....")
-    print(f"Average NME Loss : {total_NME_loss / num_data:.4f}")
-    return total_NME_loss / num_data
+    # print(f"Average NME Loss : {total_NME_loss / num_data:.4f}")
+
+    return (total_NME_loss / num_data), (total_NEM_loss_68 / num_data)
 
 def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, model_type:str, exp_name="", only_save_best=False, resume_epoch=-1):
     start_train = time.time()
@@ -239,7 +212,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                             scalar_value=float(val_loss), 
                             global_step=epoch)
         # Testing part
-        test_NME_loss = val(model, test_loader, device, model_type)
+        test_NME_loss, test_NME_loss_68 = val(model, test_loader, device, model_type)
         writer.add_scalar(tag="test/NME_loss",
                                 scalar_value=float(test_NME_loss), 
                                 global_step=epoch)

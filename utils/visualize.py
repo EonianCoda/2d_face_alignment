@@ -1,6 +1,8 @@
 import cv2
 import torch
 from utils.convert_tool import to_numpy
+import numpy as np
+import matplotlib.pyplot as plt
 
 def read_img(im_path:str):
     return cv2.imread(im_path)
@@ -43,3 +45,11 @@ def plot_keypoints(im, gt:torch.Tensor, pred:torch.Tensor, show_index:bool=True,
             im = cv2.line(im, (gt_x, gt_y), (pred_x, pred_y), color=(0,255,0), thickness=1)
 
     return im
+
+def plot_loss_68(loss:np.ndarray):
+    plt.figure()
+    plt.plot(range(1, len(loss) + 1), loss)
+    plt.xlabel("index of landmark")
+    plt.ylabel("average loss")
+    plt.show()
+    
