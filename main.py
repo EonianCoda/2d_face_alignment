@@ -136,7 +136,7 @@ def main():
         load_parameters(model, resume_model_path, optimizer, scheduler, model_type)
 
 
-    aug = [v for k, v in aug_setting.items() if v]
+    aug = [k for k, v in aug_setting.items() if v]
     aug = " ".join(aug)
     train_hyp = {'lr':lr, 
                 'bsize': batch_size,
