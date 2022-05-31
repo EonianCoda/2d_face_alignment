@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from convert_tool import *
+from utils.convert_tool import *
 
 def NME(pred, gt, average=True, return_68=False) -> float:
     pred = to_numpy(pred)
