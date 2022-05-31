@@ -1,7 +1,8 @@
+from dis import dis
 import torch
 import numpy as np
 
-def NME(pred, gt, average=True) -> float:
+def NME(pred, gt, average=True, return_68=False) -> float:
     if isinstance(pred, torch.Tensor):
         pred = pred.numpy()
     else:
@@ -10,13 +11,18 @@ def NME(pred, gt, average=True) -> float:
     if pred.ndim != gt.ndim:
         raise ValueError("Prediction and ground truth should have same dimensions!")
 
-    dist = np.sqrt(np.sum((pred - gt) ** 2, (-1,-2)))
+    dist_68 = np.sqrt(np.sum((pred - gt) ** 2, axis=-1)) / 384 # shpae = ([bs], 68)
+    dist = np.mean(dist_68, axis=-1)  # shpae = ([bs])
+
     if average:
         dist = np.mean(dist)
     else:
         dist = np.sum(dist)
-    dist /= 384
-    return float(dist)
+
+    if not return_68:
+        return float(dist)
+    else:
+        return float(dist), dist_68
 
 def heatmap_to_landmark(heatmap):
     """Convert the model output to keypoints
