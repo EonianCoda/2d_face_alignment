@@ -50,7 +50,7 @@ def main():
     epoch = cfg['epoch']
     seed = cfg['seed']
     lr = cfg['lr']
-    loss = cfg['losses'][cfg['loss_idx']]
+    loss_type = cfg['losses'][cfg['loss_idx']]
     ### Resume ###
     resume = args.resume
     resume_epoch = args.resume_epoch
@@ -90,25 +90,25 @@ def main():
                                         lr=lr,
                                         momentum=0.9, 
                                         weight_decay=1e-6)
-    # Loss
-    if loss == "L2":
+    # loss_type
+    if loss_type == "L2":
         if model_type == "classifier":
             criterion = nn.MSELoss(reduction="sum")
         elif model_type == "regressor":
             criterion = nn.MSELoss()
-    elif loss == "L1":
+    elif loss_type == "L1":
         if model_type == "classifier":
-            raise ValueError("If model type == 'classifier', then loss cannot be L1")
+            raise ValueError("If model type == 'classifier', then loss_type cannot be L1")
         criterion = nn.L1Loss()
-    elif loss == "smooth_L1":
+    elif loss_type == "smooth_L1":
         if model_type == "classifier":
-            raise ValueError("If model type == 'classifier', then loss cannot be smooth_L1")
+            raise ValueError("If model type == 'classifier', then loss_type cannot be smooth_L1")
         criterion = nn.SmoothL1Loss()
-    elif loss == "wing_loss":
+    elif loss_type == "wing_loss":
         criterion = Wing_Loss()
-    elif loss == "adaptive_wing_loss":
+    elif loss_type == "adaptive_wing_loss":
         if model_type == "regressor":
-            raise ValueError("If model type == 'regressor', then loss cannot be Adaptive_Wing_Loss")
+            raise ValueError("If model type == 'regressor', then loss_type cannot be Adaptive_Wing_Loss")
         criterion = Adaptive_Wing_Loss()
     
     # Scheduler
@@ -132,7 +132,20 @@ def main():
             raise ValueError("If resume == True, then resume model path cannot be empty")
         load_parameters(model, resume_model_path, optimizer, scheduler, model_type)
 
-    
+    train_hyp = {'lr':lr, 
+                'bsize': batch_size,
+                'model_type': model_type,
+                'loss_type':loss_type,
+                'use_image_ratio': use_image_ratio,
+                'warm_epoch': warm_epoch}
+    if model_type == "classifier":
+        train_hyp['num_HG'] = num_HG
+        train_hyp['HG_depth'] = HG_depth
+    elif model_type == "regressor":
+        train_hyp['backbone'] = backbone
+        train_hyp['dropout'] = dropout
+
+
     train(model=model,
         train_loader=train_loader,
         val_loader=val_loader,
@@ -144,8 +157,9 @@ def main():
         scheduler=scheduler,
         optimizer=optimizer,
         model_type=model_type,
-        loss_type=loss,
+        loss_type=loss_type,
         exp_name=exp_name,
+        train_hyp=train_hyp,
         only_save_best=only_save_best,
         resume_epoch=resume_epoch)
 

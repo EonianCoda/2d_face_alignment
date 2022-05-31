@@ -72,7 +72,7 @@ def val(model, test_loader, device, model_type:str):
     return (total_NME_loss / num_data), (total_NEM_loss_68 / num_data)
 
 def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, 
-    scheduler, optimizer, model_type:str, loss_type:str, exp_name="", only_save_best=False, resume_epoch=-1):
+    scheduler, optimizer, model_type:str, loss_type:str, exp_name="", train_hyp:dict=dict(), only_save_best=False, resume_epoch=-1):
     start_train = time.time()
     # Print training information
     print("Start training!!")
@@ -261,8 +261,19 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
         torch.save(optimizer.state_dict(), os.path.join(save_path, f'optimizer.pt'))
         torch.save(scheduler.state_dict(), os.path.join(save_path, f'scheduler.pt'))
 
-    writer.close()
+    
     print("End of training !!!")
-    print(f"Best training NEM loss {best_train_NME_loss:.6f} on epoch {best_train_epoch}")
-    print(f"Best validating NEM loss {best_val_NME_loss:.6f} on epoch {best_val_epoch}")
-    print(f"Best testing NEM loss {best_test_NME_loss:.6f} on epoch {best_test_epoch}")
+    print(f"Best training NME loss {best_train_NME_loss:.6f} on epoch {best_train_epoch}")
+    print(f"Best validating NME loss {best_val_NME_loss:.6f} on epoch {best_val_epoch}")
+    print(f"Best testing NME loss {best_test_NME_loss:.6f} on epoch {best_test_epoch}")
+
+    train_hyp['best/train_NME_loss'] = best_train_NME_loss
+    train_hyp['best/val_NME_loss'] = best_val_NME_loss
+    train_hyp['best/val_epoch'] = best_val_epoch
+    train_hyp['best/test_NME_loss'] = best_test_NME_loss
+    train_hyp['best/test_epoch'] = best_test_epoch
+    train_hyp['end epoch'] = end_epoch
+
+    writer.add_hparams(train_hyp)
+
+    writer.close()
