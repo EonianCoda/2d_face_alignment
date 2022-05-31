@@ -1,4 +1,5 @@
 
+import secrets
 import torch
 import torch.nn as nn
 from torch.optim.lr_scheduler import _LRScheduler, ReduceLROnPlateau
@@ -57,11 +58,20 @@ def fixed_seed(myseed):
         torch.cuda.manual_seed_all(myseed)
         torch.cuda.manual_seed(myseed)
 
-def load_parameters(model, path):
+def load_parameters(model, path, optimizer=None, scheduler=None, model_type:str=""):
     print(f'Loading model parameters from {path}...')
     param = torch.load(path)
     model.load_state_dict(param)
+
+    if optimizer != None and scheduler!= None:
+        if model_type == "":
+            raise ValueError("If optimizer and scheduler are given, then model_type cannot be empty!")
+        optimizer.load_state_dict(torch.load(os.path.join(f"./save/{model_type}", "optimizer.pt")))
+        scheduler.load_state_dict(torch.load(os.path.join(f"./save/{model_type}", "scheduler.pt")))
+
     print("End of loading !!!")
+
+
 
 
 def val(model, test_loader, device, model_type:str):
@@ -93,39 +103,51 @@ def val(model, test_loader, device, model_type:str):
     print(f"Average NME Loss : {total_NME_loss / num_data:.4f}")
     return total_NME_loss / num_data
 
-def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, model_type:str, exp_name="", only_save_best=False):
+def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, model_type:str, exp_name="", only_save_best=False, resume_epoch=-1):
     start_train = time.time()
     
-    overall_loss = []
-    overall_val_loss = []
+    # Create writerr for recording loss
     if exp_name == "":
         writer = SummaryWriter()
     else:
         path = f"./runs/{model_type}"
         os.makedirs(path,exist_ok=True)
         writer = SummaryWriter(os.path.join(path, exp_name))
-    global_training_step = 0
-    global_validation_step = 0
+
     # Create directory for saving model.
     os.makedirs(save_path,exist_ok=True)
 
     # Best NME loss and epoch for save best .pt
     best_val_NME_loss = 999
     best_epoch = 0
+
+    # Set start epoch and end epoch
+    if resume_epoch != -1:
+        start_epoch = resume_epoch
+        end_epoch = resume_epoch + epoch
+        global_training_step = len(train_loader) * (resume_epoch - 1)
+        global_validation_step = len(val_loader) * (resume_epoch - 1)
+        print("Resume training!!")
+    else:
+        start_epoch = 1
+        end_epoch = epoch + 1
+        global_training_step = 0
+        global_validation_step = 0
     # Starting training
-    for epoch in range(1, epoch + 1):
+    for epoch in range(start_epoch, end_epoch):
         print(f'epoch = {epoch}')
         start_time = time.time()
         train_loss = 0.0
         train_NME_loss = 0.0
+
+        # Record learning rate
+        writer.add_scalar(tag="hyperparameters/lr",
+                            scalar_value=float(optimizer.param_groups[0]['lr']), 
+                            global_step=epoch)
+        
         # Training part
         model.train()
-
-        writer.add_scalar(tag="hyperparameters/lr",
-                scalar_value=float(optimizer.param_groups[0]['lr']), 
-                global_step=epoch)
         for batch_idx, (data, label, gt_label) in enumerate(tqdm(train_loader)):
-            
             data = data.to(device)
             label = label.to(device)
             outputs = model(data) 
@@ -163,14 +185,14 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
   
         train_loss /= len(train_loader.dataset)
         train_NME_loss /= len(train_loader.dataset)
-
+        # Record loss with tensorboard
         writer.add_scalar(tag="train/epoch_loss",
                         scalar_value=float(train_loss), 
                         global_step=epoch)
         writer.add_scalar(tag="train/NME_epoch_loss",
                         scalar_value=float(train_NME_loss), 
                         global_step=epoch)
-        overall_loss.append(float(train_loss))
+        
         # validation part 
         with torch.no_grad():
             model.eval()
@@ -215,7 +237,6 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
             writer.add_scalar(tag="val/epoch_loss",
                             scalar_value=float(val_loss), 
                             global_step=epoch)
-            overall_val_loss.append(float(val_loss))
         # Testing part
         test_NME_loss = val(model, test_loader, device, model_type)
         writer.add_scalar(tag="test/NME_loss",
@@ -243,6 +264,9 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
             torch.save(model.state_dict(), os.path.join(save_path, 'best.pt'))
         if not only_save_best:
             torch.save(model.state_dict(), os.path.join(save_path, f'{epoch}.pt'))
+        # Save scheduler and optimizer
+        torch.save(optimizer.state_dict(), os.path.join(save_path, f'optimizer.pt'))
+        torch.save(scheduler.state_dict(), os.path.join(save_path, f'scheduler.pt'))
 
     writer.close()
     print("End of training !!!")
