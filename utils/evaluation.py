@@ -1,13 +1,10 @@
-from dis import dis
 import torch
 import numpy as np
+from convert_tool import *
 
 def NME(pred, gt, average=True, return_68=False) -> float:
-    if isinstance(pred, torch.Tensor):
-        pred = pred.numpy()
-    else:
-        pred = np.array(pred)
-    gt = np.array(gt)
+    pred = to_numpy(pred)
+    gt = to_numpy(gt)
     if pred.ndim != gt.ndim:
         raise ValueError("Prediction and ground truth should have same dimensions!")
 
@@ -24,7 +21,7 @@ def NME(pred, gt, average=True, return_68=False) -> float:
     else:
         return float(dist), dist_68
 
-def heatmap_to_landmark(heatmap):
+def heatmap_to_landmark(heatmap:torch.Tensor):
     """Convert the model output to keypoints
     """
     heatmap = heatmap[-1].detach().cpu()
@@ -57,14 +54,3 @@ def heatmap_to_landmark(heatmap):
     landmark += offsets
 
     return landmark
-# def heatmap_to_landmark(pred):
-#     """Convert the model output to keypoints
-#     """
-#     pred = pred[-1].detach().cpu()
-
-#     lmy = torch.argmax(torch.max(pred, dim=2)[0], dim=2) * 4
-#     lmx = torch.argmax(torch.max(pred, dim=3)[0], dim=2) * 4
-    
-
-#     landmark = torch.stack((lmx, lmy), dim=2)
-#     return landmark

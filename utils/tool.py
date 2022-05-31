@@ -1,5 +1,3 @@
-
-import secrets
 import torch
 import torch.nn as nn
 from torch.optim.lr_scheduler import _LRScheduler, ReduceLROnPlateau
@@ -70,9 +68,6 @@ def load_parameters(model, path, optimizer=None, scheduler=None, model_type:str=
         scheduler.load_state_dict(torch.load(os.path.join(f"./save/{model_type}", "scheduler.pt")))
 
     print("End of loading !!!")
-
-
-
 
 def val(model, test_loader, device, model_type:str):
     print("Starting Validation....")

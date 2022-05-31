@@ -1,6 +1,8 @@
 import cv2
 import torch
 import numpy as np
+from convert_tool import to_numpy
+
 def read_img(im_path:str):
     return cv2.imread(im_path)
 
@@ -20,17 +22,13 @@ def draw_point(im, coord:tuple, color:tuple, text:str=None):
                 thickness=-1)
     return im
 def plot_keypoints(im, gt:torch.Tensor, pred:torch.Tensor, show_index:bool=True, show_line:bool=True):
-    # if isinstance(im, np.ndarray) and im.all() == None:
-    #     raise ValueError("Image shouldn't be None!")
 
-    if not isinstance(im, np.ndarray):
-        im = np.array(im)
+    im = to_numpy(im).copy()
     if isinstance(gt, torch.Tensor):
         gt = gt.long().tolist()
     if isinstance(pred, torch.Tensor):
         pred = pred.long().tolist()
 
-    im = im.copy()
     # draw points
     for i, ((gt_x, gt_y), (pred_x, pred_y)) in enumerate(zip(gt, pred)):
         text = str(i+1) if show_index else None

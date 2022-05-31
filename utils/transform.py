@@ -13,7 +13,6 @@ class RandomRoation(object):
         self.prob = prob
         self.angle = angle
 
-        
         self.angle_list = [self.angle[0] + i for i in range(self.angle[1] - self.angle[0])]
         self.img_shape = img_shape
         self.model_type = model_type
