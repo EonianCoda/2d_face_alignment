@@ -13,7 +13,7 @@ import argparse
 import matplotlib.pyplot as plt
 import os
 import random
-
+import zipfile
 def shwo_img(img_path, label):
     im = read_img(img_path)
     im = plot_keypoints(im, pred=label, show_line=False)
@@ -80,7 +80,7 @@ def main():
     random.shuffle(idxs)
     for i in range(10):
         i = idxs[i]
-        shwo_img(os.path.join(data_path, images[i]), pred[i])
+        shwo_img(os.path.join(data_path, images[i]), preds[i])
     
     lines = []
     formated_str = "{:.4f} {:.4f}"
@@ -95,5 +95,11 @@ def main():
         lines.append(line)
     with open("solution.txt", 'w') as f:
         f.writelines(lines)
+
+    # Compress file
+    file_path = "solution.zip"
+    zf = zipfile.ZipFile(file_path, 'w')
+    zf.write("solution.txt")
+    zf.close()
 if __name__ == "__main__":
     main()
