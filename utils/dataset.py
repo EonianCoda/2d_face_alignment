@@ -239,7 +239,7 @@ class Predicting_FaceSynthetics(Dataset):
             images: the path of the images
             labels: training labels
         """
-        super(FaceSynthetics, self).__init__()
+        super(Predicting_FaceSynthetics, self).__init__()
         self.data_root = data_root
         # transform
         means = [0.485, 0.456, 0.406]

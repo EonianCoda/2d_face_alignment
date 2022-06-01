@@ -1,6 +1,7 @@
 import cv2
+from hamcrest import is_
 import torch
-from utils.convert_tool import to_numpy
+from utils.convert_tool import to_numpy, is_None
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -22,26 +23,36 @@ def draw_point(im, coord:tuple, color:tuple, text:str=None):
                 color=color, 
                 thickness=-1)
     return im
-def plot_keypoints(im, gt:torch.Tensor, pred:torch.Tensor, show_index:bool=True, show_line:bool=True):
-
+def plot_keypoints(im, gt=None, pred=None, show_index:bool=True, show_line:bool=True):
     im = to_numpy(im).copy()
-    if isinstance(gt, torch.Tensor):
-        gt = gt.long().tolist()
-    if isinstance(pred, torch.Tensor):
-        pred = pred.long().tolist()
 
+    if is_None(gt) and is_None(pred):
+        raise ValueError("Groud truth label and predicting lable are None!")
+
+    if not is_None(gt) and isinstance(gt, torch.Tensor):
+        gt = gt.long().tolist()
+
+    if not is_None(pred) and isinstance(pred, torch.Tensor):
+        pred = pred.long().tolist()
+    
     # draw points
-    for i, ((gt_x, gt_y), (pred_x, pred_y)) in enumerate(zip(gt, pred)):
-        text = str(i+1) if show_index else None
-        im = draw_point(im, 
-                    text=text,
-                    coord=(gt_x, gt_y), 
-                    color=(255, 0, 0))
-        im = draw_point(im, 
-                    text=text, 
-                    coord=(pred_x, pred_y), 
-                    color=(0, 0, 255))
-        if show_line:
+    if is_None(gt):
+        for i, (gt_x, gt_y) in enumerate(gt):
+            text = str(i+1) if show_index else None
+            im = draw_point(im, 
+                        text=text,
+                        coord=(gt_x, gt_y), 
+                        color=(255, 0, 0))
+    if is_None(pred):
+        for i, (pred_x, pred_y) in enumerate(pred):
+            text = str(i+1) if show_index else None
+            im = draw_point(im, 
+                        text=text,
+                        coord=(pred_x, pred_y), 
+                        color=(0, 0, 255))
+    # draw lines
+    if show_line and not is_None(gt) and not is_None(pred):
+        for i, ((gt_x, gt_y), (pred_x, pred_y)) in enumerate(zip(gt, pred)):
             im = cv2.line(im, (gt_x, gt_y), (pred_x, pred_y), color=(0,255,0), thickness=1)
 
     return im

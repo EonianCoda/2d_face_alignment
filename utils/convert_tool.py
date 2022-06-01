@@ -13,3 +13,9 @@ def to_tensor(x):
         return torch.from_numpy(x)
     else:
         return torch.tensor(x)
+
+def is_None(x):
+    if isinstance(x, np.ndarray):
+        return False
+    else:
+        return x == None
