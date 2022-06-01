@@ -1,4 +1,3 @@
-from operator import imatmul
 import torch
 from torch.utils.data import Dataset
 from torchvision.transforms import transforms

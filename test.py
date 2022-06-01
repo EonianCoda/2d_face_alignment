@@ -81,11 +81,7 @@ def main():
     for i in range(10):
         i = idxs[i]
         shwo_img(os.path.join(data_path, images[i]), pred[i])
-        
-
-
-
-
+    
     lines = []
     formated_str = "{:.4f} {:.4f}"
     for i, (img_name, pred) in enumerate(zip(images, preds)):

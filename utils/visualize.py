@@ -1,5 +1,4 @@
 import cv2
-from hamcrest import is_
 import torch
 from utils.convert_tool import to_numpy, is_None
 import numpy as np
