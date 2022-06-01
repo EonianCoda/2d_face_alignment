@@ -275,6 +275,6 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
     metric_result['best/test_epoch'] = best_test_epoch
     metric_result['end epoch'] = end_epoch
 
-    writer.add_hparams(train_hyp, metric_result)
+    # writer.add_hparams(train_hyp, metric_result)
 
     writer.close()

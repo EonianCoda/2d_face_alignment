@@ -9,7 +9,7 @@ from model.Regression import RegressionModel
 from utils.dataset import get_train_val_dataset, get_test_dataset
 from utils.tool import fixed_seed, load_parameters, train
 from utils.scheduler import Warmup_ReduceLROnPlateau
-from loss.wing_loss import Adaptive_Wing_Loss, Wing_Loss
+from losses.wing_loss import Adaptive_Wing_Loss, Wing_Loss
 from cfg import *
 
 import argparse
