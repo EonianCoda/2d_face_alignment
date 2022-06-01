@@ -35,14 +35,14 @@ def plot_keypoints(im, gt=None, pred=None, show_index:bool=True, show_line:bool=
         pred = pred.long().tolist()
     
     # draw points
-    if is_None(gt):
+    if not is_None(gt):
         for i, (gt_x, gt_y) in enumerate(gt):
             text = str(i+1) if show_index else None
             im = draw_point(im, 
                         text=text,
                         coord=(gt_x, gt_y), 
                         color=(255, 0, 0))
-    if is_None(pred):
+    if not is_None(pred):
         for i, (pred_x, pred_y) in enumerate(pred):
             text = str(i+1) if show_index else None
             im = draw_point(im, 
