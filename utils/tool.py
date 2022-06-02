@@ -62,7 +62,7 @@ def val(model, test_loader, device, model_type:str,fix_coord=False):
                 pred = outputs.detach().cpu()
 
             pred_loss, pred_loss_68 = NME(pred, gt_label, average=False, return_68=True)
-            num_data += data.shape[0]
+            num_data += img.shape[0]
             total_NME_loss += pred_loss
             total_NEM_loss_68 += pred_loss_68.sum(axis=0)
     print("End of validating....")
