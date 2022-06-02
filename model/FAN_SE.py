@@ -76,7 +76,6 @@ class HourGlassNet(nn.Module):
         self.num_feats = num_feats
 
         self.downsample = nn.AvgPool2d(kernel_size=2, stride=2)
-        self.upsample = lambda x: F.interpolate(x, scale_factor=2, mode='nearest')
         for level in range(1, depth + 1):
             # upper branch
             self.add_module(f"shortcut{level}", ConvBlock(self.num_feats, self.num_feats))
@@ -84,8 +83,7 @@ class HourGlassNet(nn.Module):
             self.add_module(f"conv{level}_1", ConvBlock(self.num_feats, self.num_feats))
             self.add_module(f"conv{level}_2", ConvBlock(self.num_feats, self.num_feats))
 
-            self.add_module(f"SE{level}_1", SELayer(self.num_feats))
-            self.add_module(f"SE{level}_2", SELayer(self.num_feats))
+            self.add_module(f"SE{level}", SELayer(self.num_feats))
 
             if level == depth:
                 self.add_module(f"conv_middle", ConvBlock(self.num_feats, self.num_feats))
@@ -97,7 +95,6 @@ class HourGlassNet(nn.Module):
         # lower branch
         x = self.downsample(x)
         x = self._modules[f"conv{level}_1"](x)
-        x = self._modules[f"SE{level}_1"](x)
         if level == self.depth:
             # End recursion
             x = self._modules["conv_middle"](x)
@@ -107,8 +104,8 @@ class HourGlassNet(nn.Module):
             
         
         x = self._modules[f"conv{level}_2"](x)
-        x = self._modules[f"SE{level}_2"](x)
-        x = self.upsample(x)
+        x = self._modules[f"SE{level}"](x)
+        x = F.interpolate(x, scale_factor=2, mode='nearest')(x)
 
         return x + residual
 

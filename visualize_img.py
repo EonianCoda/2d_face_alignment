@@ -2,8 +2,7 @@ import torch
 import os
 import argparse
 from utils.evaluation import *
-from model.FAN import FAN
-from model.Regression import RegressionModel
+from model.tool import get_model
 from utils.dataset import get_test_dataset
 from utils.tool import load_parameters
 from utils.visualize import read_img, plot_keypoints
@@ -36,7 +35,7 @@ def main():
         cfg.update(classifier_cfg)
         num_HG = cfg['num_HG']
         HG_depth = cfg['HG_depth']
-
+        num_feats = cfg['num_feats']
     elif model_type == "regressor":
         cfg.update(regressor_cfg)
         backbone = cfg['backbone'][cfg['backbone_idx']]
@@ -46,10 +45,7 @@ def main():
     test_set = get_test_dataset(data_path, annot_path, model_type)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # Create model
-    if model_type == "classifier":
-        model = FAN(num_HG=num_HG, HG_depth=HG_depth)
-    elif model_type == "regressor":
-        model = RegressionModel(backbone, dropout=dropout)
+    model = get_model(cfg)
 
     load_parameters(model, model_path)
 

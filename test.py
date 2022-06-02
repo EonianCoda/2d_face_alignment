@@ -1,12 +1,12 @@
 
+from pyexpat import model
 import torch
 from torch.utils.data import DataLoader
 from utils.dataset import get_pred_dataset
 from utils.tool import load_parameters
 from utils.visualize import read_img, plot_keypoints
 from utils.evaluation import *
-from model.FAN import FAN
-from model.Regression import RegressionModel
+from model.tool import get_model
 from cfg import *
 from tqdm import tqdm
 import argparse
@@ -53,6 +53,7 @@ def main():
         cfg.update(classifier_cfg)
         num_HG = cfg['num_HG']
         HG_depth = cfg['HG_depth']
+        num_feats = cfg['num_feats']
     elif model_type == "regressor":
         cfg.update(regressor_cfg)
         backbone = cfg['backbone'][cfg['backbone_idx']]
@@ -63,10 +64,7 @@ def main():
     test_loader = DataLoader(test_set, batch_size=batch_size, num_workers= 2, pin_memory=True)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # Create model
-    if model_type == "classifier":
-        model = FAN(num_HG=num_HG,HG_depth = HG_depth)
-    elif model_type == "regressor":
-        model = RegressionModel(backbone, dropout=dropout)
+    model = get_model(cfg)
 
     load_parameters(model, model_path)
     preds = pred_imgs(model=model, 

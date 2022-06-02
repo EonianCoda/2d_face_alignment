@@ -12,47 +12,51 @@ def conv1x1(in_planes:int, out_planes:int):
     return nn.Conv2d(in_planes, out_planes, kernel_size=1,
                      stride=1, padding=0)
 
-class ConvBlock(nn.Module):
-    def __init__(self, in_planes:int, out_planes:int):
-        super(ConvBlock, self).__init__()
-        self.bn1 = nn.BatchNorm2d(in_planes)
-        self.conv1 = conv3x3(in_planes, int(out_planes / 2))
-        self.bn2 = nn.BatchNorm2d(int(out_planes / 2))
-        self.conv2 = conv3x3(int(out_planes / 2), int(out_planes / 4))
-        self.bn3 = nn.BatchNorm2d(int(out_planes / 4))
-        self.conv3 = conv3x3(int(out_planes / 4), int(out_planes / 4))
-
-        self.relu = nn.ReLU(inplace=True)
-        if in_planes != out_planes:
-            self.shortcut = nn.Sequential(
-                nn.BatchNorm2d(in_planes),
+class SELayer(nn.Module):
+    def __init__(self, channel, reduction=4):
+        super(SELayer, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+                nn.Linear(channel, channel // reduction),
                 nn.ReLU(inplace=True),
-                nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=1, bias=False)
-            )
-        else:
-            self.shortcut = None
+                nn.Linear(channel // reduction, channel),
+                nn.Sigmoid(),
+        )
 
     def forward(self, x):
-        residual = x
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y
 
-        out1 = self.bn1(x)
-        out1 = self.relu(out1)
-        out1 = self.conv1(out1)
+class InvertedResidual(nn.Module):
+    def __init__(self, inp, oup, kernel_size=3, stride=1):
+        super(InvertedResidual, self).__init__()
 
-        out2 = self.bn2(out1)
-        out2 = self.relu(out2)
-        out2 = self.conv2(out2)
+        self.identity = stride == 1 and inp == oup
+        hidden_dim = inp * 2
+      
+        self.conv = nn.Sequential(
+            # pw
+            nn.Conv2d(inp, hidden_dim, 1, 1, 0, bias=False),
+            nn.BatchNorm2d(hidden_dim),
+            nn.ReLU(inplace=True),
+            # dw
+            nn.Conv2d(hidden_dim, hidden_dim, kernel_size, stride, (kernel_size - 1) // 2, groups=hidden_dim, bias=False),
+            nn.BatchNorm2d(hidden_dim),
+            # Squeeze-and-Excite
+            SELayer(hidden_dim),
+            nn.ReLU(inplace=True),
+            # pw-linear
+            nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=False),
+            nn.BatchNorm2d(oup),
+        )
 
-        out3 = self.bn3(out2)
-        out3 = self.relu(out3)
-        out3 = self.conv3(out3)
-
-        out3 = torch.cat([out1, out2, out3], axis=1)
-        if self.shortcut != None:
-            residual =  self.shortcut(residual)
-        out3 += residual
-
-        return out3
+    def forward(self, x):
+        if self.identity:
+            return x + self.conv(x)
+        else:
+            return self.conv(x)
 
 class HourGlassNet(nn.Module):
     def __init__(self, depth:int, num_feats:int):
@@ -63,12 +67,12 @@ class HourGlassNet(nn.Module):
         self.downsample = nn.AvgPool2d(kernel_size=2, stride=2)
         for level in range(1, depth + 1):
             # upper branch
-            self.add_module(f"shortcut{level}", ConvBlock(self.num_feats, self.num_feats))
+            self.add_module(f"shortcut{level}", InvertedResidual(self.num_feats, self.num_feats))
             # lower branch
-            self.add_module(f"conv{level}_1", ConvBlock(self.num_feats, self.num_feats))
-            self.add_module(f"conv{level}_2", ConvBlock(self.num_feats, self.num_feats))
+            self.add_module(f"conv{level}_1", InvertedResidual(self.num_feats, self.num_feats))
+            self.add_module(f"conv{level}_2", InvertedResidual(self.num_feats, self.num_feats))
             if level == depth:
-                self.add_module(f"conv_middle", ConvBlock(self.num_feats, self.num_feats))
+                self.add_module(f"conv_middle", InvertedResidual(self.num_feats, self.num_feats))
 
     def _forward(self, x, level:int):
         residual = x
@@ -110,14 +114,14 @@ class FAN(nn.Module):
 
         self.conv1 = nn.Conv2d(3, int(self.num_feats / 4), kernel_size=7, stride=2, padding=3)
         self.bn1 = nn.BatchNorm2d(int(self.num_feats / 4))
-        self.conv2 = ConvBlock(int(self.num_feats / 4), int(self.num_feats / 2))
-        self.conv3 = ConvBlock(int(self.num_feats / 2), int(self.num_feats / 2))
-        self.conv4 = ConvBlock(int(self.num_feats / 2), self.num_feats)
+        self.conv2 = InvertedResidual(int(self.num_feats / 4), int(self.num_feats / 2))
+        self.conv3 = InvertedResidual(int(self.num_feats / 2), int(self.num_feats / 2))
+        self.conv4 = InvertedResidual(int(self.num_feats / 2), self.num_feats)
 
         # Stacked hourglassNet part
         for stack_idx in range(1, self.num_HG + 1):
             self.add_module(f"HG{stack_idx}", HourGlassNet(self.HG_dpeth, self.num_feats))
-            self.add_module(f"stack{stack_idx}_conv1", ConvBlock(self.num_feats, self.num_feats))
+            self.add_module(f"stack{stack_idx}_conv1", InvertedResidual(self.num_feats, self.num_feats))
             self.add_module(f"stack{stack_idx}_conv2", conv1x1(self.num_feats, self.num_feats))
             self.add_module(f"stack{stack_idx}_bn1", nn.BatchNorm2d(int(self.num_feats)))
 
@@ -160,3 +164,9 @@ class FAN(nn.Module):
                 out_ = self._modules[f"stack{stack_idx}_shortcut"](out)
                 x = out_ + residual + x
         return outputs
+            
+
+
+
+    
+

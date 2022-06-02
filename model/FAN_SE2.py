@@ -7,10 +7,27 @@ def conv3x3(in_planes:int, out_planes:int, stride=1, padding=1, bias=False):
     return nn.Conv2d(in_planes, out_planes, kernel_size=3,
                      stride=stride, padding=padding, bias=bias)
 
-def conv1x1(in_planes:int, out_planes:int):
+def conv1x1(in_planes:int, out_planes:int, bias=True):
     "1x1 convolution without padding"
     return nn.Conv2d(in_planes, out_planes, kernel_size=1,
-                     stride=1, padding=0)
+                     stride=1, padding=0, bias=bias)
+
+class SELayer(nn.Module):
+    def __init__(self, channel, reduction=4):
+        super(SELayer, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+                nn.Linear(channel, channel // reduction),
+                nn.ReLU(inplace=True),
+                nn.Linear(channel // reduction, channel),
+                nn.Sigmoid(),
+        )
+
+    def forward(self, x):
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y
 
 class ConvBlock(nn.Module):
     def __init__(self, in_planes:int, out_planes:int):
@@ -21,6 +38,8 @@ class ConvBlock(nn.Module):
         self.conv2 = conv3x3(int(out_planes / 2), int(out_planes / 4))
         self.bn3 = nn.BatchNorm2d(int(out_planes / 4))
         self.conv3 = conv3x3(int(out_planes / 4), int(out_planes / 4))
+
+        self.SE = SELayer(out_planes)
 
         self.relu = nn.ReLU(inplace=True)
         if in_planes != out_planes:
@@ -48,8 +67,9 @@ class ConvBlock(nn.Module):
         out3 = self.conv3(out3)
 
         out3 = torch.cat([out1, out2, out3], axis=1)
+        out3 = self.SE(out3)
         if self.shortcut != None:
-            residual =  self.shortcut(residual)
+            residual = self.shortcut(residual)
         out3 += residual
 
         return out3
@@ -67,6 +87,7 @@ class HourGlassNet(nn.Module):
             # lower branch
             self.add_module(f"conv{level}_1", ConvBlock(self.num_feats, self.num_feats))
             self.add_module(f"conv{level}_2", ConvBlock(self.num_feats, self.num_feats))
+
             if level == depth:
                 self.add_module(f"conv_middle", ConvBlock(self.num_feats, self.num_feats))
 
@@ -77,7 +98,6 @@ class HourGlassNet(nn.Module):
         # lower branch
         x = self.downsample(x)
         x = self._modules[f"conv{level}_1"](x)
-        
         if level == self.depth:
             # End recursion
             x = self._modules["conv_middle"](x)
@@ -133,6 +153,9 @@ class FAN(nn.Module):
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
+            elif isinstance(m, nn.Linear):
+                m.weight.data.normal_(0, 0.01)
+                m.bias.data.zero_()
 
     def forward(self, x):
         outputs = []
@@ -160,3 +183,9 @@ class FAN(nn.Module):
                 out_ = self._modules[f"stack{stack_idx}_shortcut"](out)
                 x = out_ + residual + x
         return outputs
+            
+
+
+
+    
+

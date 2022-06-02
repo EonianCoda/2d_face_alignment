@@ -4,8 +4,7 @@ from torch.utils.data import DataLoader
 import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 # Model
-from model.FAN import FAN
-from model.Regression import RegressionModel
+from model.tool import get_model
 from utils.dataset import get_train_val_dataset, get_test_dataset
 from utils.tool import fixed_seed, load_parameters, train
 from utils.scheduler import Warmup_ReduceLROnPlateau
@@ -38,6 +37,7 @@ def main():
         cfg.update(classifier_cfg)
         num_HG = cfg['num_HG']
         HG_depth = cfg['HG_depth']
+        num_feats = cfg['num_feats']
     elif model_type == "regressor":
         cfg.update(regressor_cfg)
         backbone = cfg['backbone'][cfg['backbone_idx']]
@@ -65,10 +65,7 @@ def main():
     fixed_seed(seed)
 
     # Create model
-    if model_type == "classifier":
-        model = FAN(num_HG=num_HG, HG_depth=HG_depth)
-    elif model_type == "regressor":
-        model = RegressionModel(backbone, dropout=dropout)
+    model = get_model(cfg)
     # Create train/val set
     print("Loading annotation...")
     train_set, val_set = get_train_val_dataset(data_root=train_data_root, 

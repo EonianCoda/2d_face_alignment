@@ -30,8 +30,15 @@ cfg = {
 }
 
 classifier_cfg = {
-    'num_HG': 1,
-    'HG_depth':2,
+    'num_HG': 2,
+    'HG_depth':4,
+    'num_feats':128,
+    'backbone_idx': 0,
+    'backbone': {0: "FAN",
+                1: "FAN_SE",
+                2: "FAN_SE2",
+                3: "FAM_IR"},
+
     ### Training hyperparameters ###
     'batch_size': 8,
     'lr':1e-4,
