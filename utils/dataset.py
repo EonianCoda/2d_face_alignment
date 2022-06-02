@@ -9,7 +9,9 @@ import os
 import random
 import math
 import copy
+import pickle
 
+from scipy import ndimage
 from utils.transform import get_transform
 
 def process_annot(annot_path:str):
@@ -29,8 +31,31 @@ def process_annot(annot_path:str):
     
     labels = labels[valid_idxs]
     images = [images[i] for i in valid_idxs]
-    
     return images, labels
+    # For classifier
+    # Generate kernel
+    # path = os.path.dirname(annot_path)
+    # file_name = os.path.basename(annot_path).split('.')[0]
+    # cached_file = f'cached_{file_name}_kernel.pkl'
+    # cached_file = os.path.join(path, cached_file)
+
+    # if os.path.isfile(cached_file):
+    #     kernels = pickle.load(open(cached_file, 'rb'))
+    #     return images, labels, kernels
+    # else:
+    #     converter = Heatmap_converter()
+    #     labels = torch.from_numpy(labels)
+    #     gt_labels = labels.copy()
+    #     labels = torch.round(labels * 0.25).long()
+    #     offsets = (gt_labels - labels *4)
+    #     kernels = []
+    #     for offset in offsets:
+    #         kernels.append(converter._get_kernel(offset))
+    #     with open(cached_file, 'wb') as f:
+    #         pickle.dump(kernels, f)
+
+
+    #     return images, gt_labels, kernels
 
 def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0, model_type="classifier",aug_setting:dict=None):
     """Get training set and valiating set
@@ -148,7 +173,6 @@ class Heatmap_converter(object):
             ul_k = (0 if (y - self.pad_w) > 0 else -1 * (y - self.pad_w), # upper left point on kernel
                     0 if (x - self.pad_w) > 0 else -1 * (x - self.pad_w)) 
 
-
             lr_k = ((self.window_size - max(-1 * ((self.heatmap_size - 1) - (y + self.pad_w)), 0)), # lower right point on kernel
                     (self.window_size - max(-1 * ((self.heatmap_size - 1) - (x + self.pad_w)), 0)))
             heatmap[i, ul_h[0]:lr_h[0], ul_h[1]:lr_h[1]] = kernel[ul_k[0]:lr_k[0], ul_k[1]:lr_k[1]]
@@ -220,7 +244,16 @@ class FaceSynthetics(Dataset):
 
     def __len__(self):
         return len(self.images)
-
+ 
+  
+    @staticmethod
+    def _generate_weight_map(heatmap):
+        weight_map = torch.zeros_like(heatmap)
+        k_size = 3
+        for i in range(heatmap.shape[0]):
+            dilate = ndimage.grey_dilation(heatmap[i], size=(k_size,k_size))
+            weight_map[i][dilate>0.2] = 1
+        return weight_map
     def __getitem__(self, idx:int):
         # Read imagee
         img_path = os.path.join(self.data_root, self.images[idx])
