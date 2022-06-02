@@ -18,10 +18,10 @@ class SELayer(nn.Module):
         self.se = nn.Sequential(
                 nn.AdaptiveAvgPool2d(1),
                 conv1x1(in_planes, in_planes // reduction, bias=False),
-                nn.BatchNorm2d(in_planes // reduction),
+                # nn.BatchNorm2d(in_planes // reduction),
                 nn.ReLU(inplace=True),
                 conv1x1(in_planes // reduction, in_planes, bias=False),
-                nn.BatchNorm2d(in_planes),
+                # nn.BatchNorm2d(in_planes),
                 nn.Sigmoid()
         )
     def forward(self, x):
