@@ -13,7 +13,7 @@ def get_FAN(num_HG:int = 4, HG_depth:int = 4, num_feats:int = 256, backbone:str=
     return FAN(num_HG, HG_depth, num_feats)
     
 def get_model(cfg:dict):
-    model_type = cfg['model_type']
+    model_type = cfg['model_type'][cfg['model_type_idx']]
     if model_type == "classifier":
         num_HG = cfg['num_HG']
         HG_depth = cfg['HG_depth']
