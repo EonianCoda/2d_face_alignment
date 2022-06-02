@@ -9,7 +9,8 @@ cfg = {
                 1:"L1",
                 2:"smoothL1",
                 3:"wing_loss",
-                4:"adaptive_wing_loss"},
+                4:"adaptive_wing_loss",
+                5:"weighted_L2"},
 
     ### Scheduler setting ###
     'scheduler_type': 1,  # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
@@ -33,6 +34,7 @@ classifier_cfg = {
     'num_HG': 2,
     'HG_depth':4,
     'num_feats':128,
+    'fix_coord':False,
     'backbone_idx': 0,
     'backbone': {0: "FAN",
                 1: "FAN_SE",

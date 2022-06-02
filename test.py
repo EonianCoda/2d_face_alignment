@@ -20,7 +20,7 @@ def shwo_img(img_path, label):
     plt.figure()
     plt.imshow(im)
 
-def pred_imgs(model, test_loader, model_type:str, device):
+def pred_imgs(model, test_loader, model_type:str, device,fix_coord = False):
     model = model.to(device)
     preds = []
 
@@ -30,7 +30,7 @@ def pred_imgs(model, test_loader, model_type:str, device):
             outputs = model(data)
 
             if model_type == "classifier":
-                pred = heatmap_to_landmark(outputs)
+                pred = heatmap_to_landmark(outputs, fix_coord =fix_coord)
             elif model_type == "regressor":
                 pred = outputs.detach().cpu()
             
@@ -43,7 +43,7 @@ def main():
     parser.add_argument('--model_path', type=str)
     parser.add_argument('--type', type=str, default="val")
     args = parser.parse_args()
-
+    fix_coord = cfg['fix_coord']
     ### path ###
     data_path = f"./data/{args.type}"
     model_path = args.model_path
@@ -51,13 +51,9 @@ def main():
     model_type = cfg['model_type'][cfg['model_type_idx']]
     if model_type == "classifier":
         cfg.update(classifier_cfg)
-        num_HG = cfg['num_HG']
-        HG_depth = cfg['HG_depth']
-        num_feats = cfg['num_feats']
     elif model_type == "regressor":
         cfg.update(regressor_cfg)
-        backbone = cfg['backbone'][cfg['backbone_idx']]
-        dropout = cfg['dropout']
+
 
     batch_size = cfg['batch_size'] * 2
     test_set = get_pred_dataset(data_path)
@@ -68,9 +64,10 @@ def main():
 
     load_parameters(model, model_path)
     preds = pred_imgs(model=model, 
-                test_loader=test_loader, 
-                device=device,
-                model_type=model_type)
+                        test_loader=test_loader, 
+                        device=device,
+                        model_type=model_type,
+                        fix_coord=fix_coord)
     images = test_set.images
 
     # Visualize some image for checking
@@ -79,6 +76,7 @@ def main():
     for i in range(10):
         i = idxs[i]
         shwo_img(os.path.join(data_path, images[i]), preds[i])
+    plt.show()
     
     lines = []
     formated_str = "{:.4f} {:.4f}"

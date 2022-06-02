@@ -57,7 +57,8 @@ def process_annot(annot_path:str):
 
     #     return images, gt_labels, kernels
 
-def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0, model_type="classifier",aug_setting:dict=None):
+def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0, model_type="classifier",
+                            aug_setting:dict=None, use_weight_map=False,fix_coord=False):
     """Get training set and valiating set
     Args:
         data_root: the data root for images
@@ -87,12 +88,18 @@ def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_ima
                                     images=train_images,
                                     labels=train_labels,
                                     model_type=model_type,
+                                    return_gt=False,
+                                    use_weight_map=use_weight_map,
+                                    fix_coord=fix_coord,
                                     transform='train',
                                     aug_setting=aug_setting)
     val_dataset = FaceSynthetics(data_root=data_root, 
                                     images=val_images,
                                     labels=val_labels,
                                     model_type=model_type,
+                                    return_gt= True,
+                                    use_weight_map=use_weight_map,
+                                    fix_coord=fix_coord,
                                     transform='val')
     return train_dataset, val_dataset
 
@@ -102,6 +109,7 @@ def get_test_dataset(data_path:str, annot_path:str, model_type:str):
                                     images=images,
                                     labels=labels,
                                     model_type=model_type,
+                                    return_gt= True,
                                     transform='test')
     return test_dataset
 
@@ -216,7 +224,9 @@ class Old_heatmap_converter(object):
         return heatmap
 
 class FaceSynthetics(Dataset):
-    def __init__(self, data_root:str, images:list, labels:np.ndarray, transform="train", model_type="classifier", aug_setting:dict=None, heatmap_size=96) -> None:
+    def __init__(self, data_root:str, images:list, labels:np.ndarray, transform="train", 
+                model_type="classifier", aug_setting:dict=None, heatmap_size=96, return_gt=True, 
+                use_weight_map=False, fix_coord=False) -> None:
         """
         Args:
             data_root: the path of the data
@@ -230,6 +240,8 @@ class FaceSynthetics(Dataset):
         super(FaceSynthetics, self).__init__()
         self.data_root = data_root
         self.model_type = model_type
+        self.return_gt = return_gt
+        self.use_weight_map = use_weight_map
         # transform
         self.transform = get_transform(data_type=transform,
                                         aug_setting=aug_setting)
@@ -239,13 +251,15 @@ class FaceSynthetics(Dataset):
         self.num_classes = len(self.labels[0])
         # heatmap converter
         if self.model_type == "classifier":
-            self.converter = Heatmap_converter(heatmap_size)
+            if fix_coord:
+                self.converter = Heatmap_converter(heatmap_size)
+            else:
+                self.converter = Old_heatmap_converter(heatmap_size)
             # self.heatmap_size = heatmap_size
 
     def __len__(self):
         return len(self.images)
  
-  
     @staticmethod
     def _generate_weight_map(heatmap):
         weight_map = torch.zeros_like(heatmap)
@@ -259,11 +273,20 @@ class FaceSynthetics(Dataset):
         img_path = os.path.join(self.data_root, self.images[idx])
         im = Image.open(img_path)
         im, label = self.transform(im, self.labels[idx])
-        gt_label = label.clone()
+        if self.return_gt:
+            gt_label = label.clone()
         # transform point to heatmap
         if self.model_type == "classifier":
             label = self.converter.convert(label)
-        return im, label, gt_label
+
+        if self.return_gt and self.use_weight_map:
+            return im, label, gt_label, self._generate_weight_map(label)
+        elif self.return_gt:
+            return im, label, gt_label
+        elif self.use_weight_map:
+            return im, label, self._generate_weight_map(label)
+        else:
+            return im, label
 
 class Predicting_FaceSynthetics(Dataset):
     def __init__(self, data_root:str, images:list) -> None:

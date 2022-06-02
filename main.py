@@ -3,6 +3,7 @@ import torch
 from torch.utils.data import DataLoader
 import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from losses.weighted_L2 import Weighted_L2
 # Model
 from model.tool import get_model
 from utils.dataset import get_train_val_dataset, get_test_dataset
@@ -52,6 +53,7 @@ def main():
     lr = cfg['lr']
     loss_type = cfg['losses'][cfg['loss_idx']]
     aug_setting = cfg['aug_setting']
+    fix_coord = cfg['fix_coord']
     ### Resume ###
     resume = args.resume
     resume_epoch = args.resume_epoch
@@ -68,11 +70,17 @@ def main():
     model = get_model(cfg)
     # Create train/val set
     print("Loading annotation...")
+    if loss_type == "weighted_L2":
+        use_weight_map = True
+    else:
+        use_weight_map = False
     train_set, val_set = get_train_val_dataset(data_root=train_data_root, 
                                                annot_path=train_annot, 
                                                train_size=split_ratio,
                                                use_image_ratio=use_image_ratio,
                                                model_type=model_type,
+                                               use_weight_map=use_weight_map,
+                                               fix_coord=fix_coord,
                                                aug_setting=aug_setting)
     print("End of Loading annotation!!!")
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers= 2, pin_memory=True, drop_last=True)
@@ -109,6 +117,8 @@ def main():
         if model_type == "regressor":
             raise ValueError("If model type == 'regressor', then loss_type cannot be Adaptive_Wing_Loss")
         criterion = Adaptive_Wing_Loss()
+    elif loss_type == "weighted_L2":
+        criterion = Weighted_L2()
     
     # Scheduler
     if scheduler_type == 0:
@@ -166,6 +176,8 @@ def main():
         exp_name=exp_name,
         train_hyp=train_hyp,
         only_save_best=only_save_best,
+        use_weight_map=use_weight_map,
+        fix_coord=fix_coord,
         resume_epoch=resume_epoch)
 
     

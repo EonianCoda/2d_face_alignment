@@ -21,6 +21,7 @@ def main():
     parser.add_argument('--show_line', action="store_true")
     args = parser.parse_args()
 
+    fix_coord = cfg['fix_coord']
     ### Data parameters ##
     annot_path = f"./data/{args.type}_annot.pkl"
     data_path = f"./data/{args.type}"
@@ -33,13 +34,8 @@ def main():
     model_type = cfg['model_type'][cfg['model_type_idx']]
     if model_type == "classifier":
         cfg.update(classifier_cfg)
-        num_HG = cfg['num_HG']
-        HG_depth = cfg['HG_depth']
-        num_feats = cfg['num_feats']
     elif model_type == "regressor":
         cfg.update(regressor_cfg)
-        backbone = cfg['backbone'][cfg['backbone_idx']]
-        dropout = cfg['dropout']
 
 
     test_set = get_test_dataset(data_path, annot_path, model_type)
@@ -61,7 +57,7 @@ def main():
             img = img.to(device).unsqueeze(dim=0)
             outputs = model(img)
             if model_type == "classifier":
-                pred = heatmap_to_landmark(outputs)
+                pred = heatmap_to_landmark(outputs, fix_coord=fix_coord)
             elif model_type == "regressor":
                 pred = outputs.detach().cpu()
             pred = pred[0]

@@ -35,19 +35,20 @@ class RandomRoation(object):
     def __call__(self, img, label:torch.Tensor):
         if random.random() < self.prob:
             h, w, c = self.img_shape
+            origin_label = label.clone()
             
             angle_i = random.randint(0, len(self.angle_list)-1)
             angle = self.angle_list[angle_i]
-            img = F.rotate(img, angle)
+            r_img = F.rotate(img, angle)
 
             rot_matrix = self.rot_matrices[angle_i]
 
-            r_label = self._rotate_points(label.float().clone(), w, h, rot_matrix) # Rotate label
+            r_label = self._rotate_points(label, w, h, rot_matrix) # Rotate label
             # Out of bound
             if (r_label < 0).any() or (r_label >= h).any():
-                return img, label
+                return img, origin_label
 
-            return img, r_label
+            return r_img, r_label
 
         return img, label
 

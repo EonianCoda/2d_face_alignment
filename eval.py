@@ -16,6 +16,7 @@ def main():
     parser.add_argument('--type', type=str, default="val")
     args = parser.parse_args()
 
+    fix_coord = cfg['fix_coord']
     ### path ###
     annot_path = f"./data/{args.type}_annot.pkl"
     data_path = f"./data/{args.type}"
@@ -24,12 +25,9 @@ def main():
     model_type = cfg['model_type'][cfg['model_type_idx']]
     if model_type == "classifier":
         cfg.update(classifier_cfg)
-        num_HG = cfg['num_HG']
-        HG_depth = cfg['HG_depth']
     elif model_type == "regressor":
         cfg.update(regressor_cfg)
-        backbone = cfg['backbone'][cfg['backbone_idx']]
-        dropout = cfg['dropout']
+
 
     batch_size = cfg['batch_size'] * 2
 
@@ -41,7 +39,7 @@ def main():
     model = get_model(cfg)
 
     load_parameters(model, model_path)
-    test_NME_loss, test_NME_loss_68 = val(model, test_loader, device, model_type)
+    test_NME_loss, test_NME_loss_68 = val(model, test_loader, device, model_type, fix_coord=fix_coord)
     print(f"Average NME Loss : {test_NME_loss:.4f}")
     plot_loss_68(test_NME_loss_68)
     print(np.argsort(test_NME_loss_68))
