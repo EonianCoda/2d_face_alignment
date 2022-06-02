@@ -42,7 +42,7 @@ class RandomRoation(object):
 
             rot_matrix = self.rot_matrices[angle_i]
 
-            r_label = self._rotate_points(label.float(), w, h, rot_matrix) # Rotate label
+            r_label = self._rotate_points(label.float().clone(), w, h, rot_matrix) # Rotate label
             # Out of bound
             if (r_label < 0).any() or (r_label >= h).any():
                 return img, label
