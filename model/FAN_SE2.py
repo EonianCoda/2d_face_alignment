@@ -107,7 +107,7 @@ class HourGlassNet(nn.Module):
             
         
         x = self._modules[f"conv{level}_2"](x)
-        x = F.interpolate(x, scale_factor=2, mode='nearest')(x)
+        x = F.interpolate(x, scale_factor=2, mode='nearest')
 
         return x + residual
 
