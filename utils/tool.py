@@ -70,7 +70,7 @@ def val(model, test_loader, device, model_type:str,fix_coord=False):
 
     return (total_NME_loss / num_data), (total_NEM_loss_68 / num_data)
 
-def process_loss(model_type:str, loss_type:str, criterion, outputs:torch.Tensor, label:torch.Tensor, weight_map:torch.Tensor=None)
+def process_loss(model_type:str, loss_type:str, criterion, outputs:torch.Tensor, label:torch.Tensor, weight_map:torch.Tensor=None):
     loss = 0
     if model_type == "classifier":
         if loss_type =="L2":

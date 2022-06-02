@@ -176,7 +176,6 @@ def main():
         exp_name=exp_name,
         train_hyp=train_hyp,
         only_save_best=only_save_best,
-        use_weight_map=use_weight_map,
         fix_coord=fix_coord,
         resume_epoch=resume_epoch)
 
