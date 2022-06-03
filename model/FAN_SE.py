@@ -12,7 +12,7 @@ def conv1x1(in_planes:int, out_planes:int, bias=True):
     return nn.Conv2d(in_planes, out_planes, kernel_size=1,
                      stride=1, padding=0, bias=bias)
 
-class SELayer(nn.Module):
+class SELayer_old(nn.Module):
     def __init__(self, in_planes:int, reduction=4):
         super(SELayer, self).__init__()
         self.se = nn.Sequential(
@@ -26,6 +26,23 @@ class SELayer(nn.Module):
         )
     def forward(self, x):
         return x * self.se(x)
+
+class SELayer(nn.Module):
+    def __init__(self, channel, reduction=4):
+        super(SELayer, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+                nn.Linear(channel, channel // reduction),
+                nn.ReLU(inplace=True),
+                nn.Linear(channel // reduction, channel),
+                nn.Sigmoid(),
+        )
+
+    def forward(self, x):
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y
 
 class ConvBlock(nn.Module):
     def __init__(self, in_planes:int, out_planes:int):
@@ -150,6 +167,9 @@ class FAN(nn.Module):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
+                m.bias.data.zero_()
+            elif isinstance(m, nn.Linear):
+                m.weight.data.normal_(0, 0.01)
                 m.bias.data.zero_()
 
     def forward(self, x):
