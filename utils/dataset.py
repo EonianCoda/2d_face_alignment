@@ -184,7 +184,7 @@ class PDB(object):
 
         # ratio = [num / len(projected) for num in num_data]
         # weight = 1 / (ratio / ratio[2])
-        W = [3,2,1,2,3]
+        W = [1, 1, 2, 3, 3]
         weights = np.zeros((num_data))
         
         cur_idx = 0
@@ -329,17 +329,27 @@ class FaceSynthetics(Dataset):
 
         # data weight
         if not is_None(data_weight):
-            max_ratio = 0.2
-            num_imgs = len(self.images)
-            total_weight = int(data_weight.sum())
-            self.extra_num_data = min( int((data_weight != 1).sum() * max_ratio), int(num_imgs * max_ratio))
-            self.num_data = num_imgs + self.extra_num_data
-            self.max_idx = len(self.images)
-            data_weight = data_weight - 1
-            self.data_weight = data_weight / data_weight.sum()
+            num_normal_data = (data_weight == 2).sum()
+            print(num_normal_data, num_normal_data / len(self.images))
+
+            idxs = np.arange(len(self.images))
+
+            mapping_idxs = [idxs[data_weight == 2]]
+            # Type1
+            mask = (data_weight == 1)
+            mapping_idxs.append(np.random.choice(idxs[mask], max(int(num_normal_data * 0.5), mask.sum())))
+            # Type3
+            mask = (data_weight == 3)
+            mapping_idxs.append(np.random.choice(idxs[mask], max(int(num_normal_data * 0.5), mask.sum())))
+
+            mapping_idxs = np.concatenate(mapping_idxs).flatten()
+            np.random.shuffle(mapping_idxs)
+            self.mapping_idxs = mapping_idxs
+            self.num_data = len(self.mapping_idxs)
         else:
             self.num_data = len(self.images)
-            self.extra_num_data = 0
+            self.mapping_idxs = [i for i in range(self.num_data)]
+
 
         # heatmap converter
         if self.model_type == "classifier":
@@ -353,14 +363,15 @@ class FaceSynthetics(Dataset):
         return self.num_data
     
     def index_mapping(self, idx:int):
-        if self.extra_num_data == 0:
-            return idx
-        else:
-            if idx >= self.max_idx:
-                idx = np.random.choice(range(self.max_idx), p=self.data_weight)
-                return int(idx)
-            else:
-                return idx
+        return self.mapping_idxs[idx]
+        # if self.extra_num_data == 0:
+        #     return idx
+        # else:
+        #     if idx >= self.max_idx:
+        #         idx = np.random.choice(range(self.max_idx), p=self.data_weight)
+        #         return int(idx)
+        #     else:
+        #         return idx
     @staticmethod
     def _generate_weight_map(heatmap):
         weight_map = torch.zeros_like(heatmap)
