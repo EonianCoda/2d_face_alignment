@@ -91,14 +91,6 @@ def process_loss(model_type:str, loss_type:str, criterion, outputs:torch.Tensor,
 def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, 
         model_type:str, loss_type:str, exp_name="", train_hyp:dict=dict(), only_save_best=False, resume_epoch=-1,fix_coord=False):
     start_train = time.time()
-    # Print training information
-    print("Start training!!")
-    print(f"Model type = {model_type}")
-    if model_type == "regressor":
-        print(f"Backbone type = {model_type}")
-    print(f"Length of training dataloader = {len(train_loader)}")
-    print(f"Loss type = {loss_type}")
-
     # Create writerr for recording loss
     if exp_name == "":
         writer = SummaryWriter()

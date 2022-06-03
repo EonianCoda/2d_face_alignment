@@ -162,6 +162,17 @@ def main():
         train_hyp['backbone'] = backbone
         train_hyp['dropout'] = dropout
 
+    # Print training information
+    print("Start training!!\n")
+    print(f"Model type = {model_type}")
+    print(f"Backbone type = {backbone}")
+
+    print(f"Loss type = {loss_type}")
+    print(f"Length of training dataloader = {len(train_loader)}")
+    print(f"Fix coord = {fix_coord}")
+    print(f"Balance_data = {balance_data}")
+    
+    
 
     train(model=model,
         train_loader=train_loader,

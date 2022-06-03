@@ -151,7 +151,7 @@ class PDB(object):
 
         print("Calculating projected....")
         shapes = labels
-        ref_shape = shapes.mean(dim=0)
+        ref_shape = shapes.mean(axis=0)
         aligned = []
         for shape in shapes:
             _ , transform , _ = procrustes(ref_shape, shape)
