@@ -332,7 +332,7 @@ class FaceSynthetics(Dataset):
             max_ratio = 0.2
             num_imgs = len(self.images)
             total_weight = int(data_weight.sum())
-            self.extra_num_data = min((data_weight != 1).sum() * max_ratio, num_imgs * max_ratio)
+            self.extra_num_data = min( int((data_weight != 1).sum() * max_ratio), int(num_imgs * max_ratio))
             self.num_data = num_imgs + self.extra_num_data
             self.max_idx = len(self.images)
             data_weight = data_weight - 1
