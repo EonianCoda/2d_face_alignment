@@ -54,6 +54,7 @@ def main():
     loss_type = cfg['losses'][cfg['loss_idx']]
     aug_setting = cfg['aug_setting']
     fix_coord = cfg['fix_coord']
+    balance_data = cfg['balance_data']
     ### Resume ###
     resume = args.resume
     resume_epoch = args.resume_epoch
@@ -81,6 +82,7 @@ def main():
                                                model_type=model_type,
                                                use_weight_map=use_weight_map,
                                                fix_coord=fix_coord,
+                                               get_weight=balance_data,
                                                aug_setting=aug_setting)
     print("End of Loading annotation!!!")
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers= 2, pin_memory=True, drop_last=True)
