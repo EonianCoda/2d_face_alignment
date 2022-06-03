@@ -43,7 +43,7 @@ def main():
     parser.add_argument('--model_path', type=str)
     parser.add_argument('--type', type=str, default="val")
     args = parser.parse_args()
-    fix_coord = cfg['fix_coord']
+    
     ### path ###
     data_path = f"./data/{args.type}"
     model_path = args.model_path
@@ -54,7 +54,7 @@ def main():
     elif model_type == "regressor":
         cfg.update(regressor_cfg)
 
-
+    fix_coord = cfg['fix_coord']
     batch_size = cfg['batch_size'] * 2
     test_set = get_pred_dataset(data_path)
     test_loader = DataLoader(test_set, batch_size=batch_size, num_workers= 2, pin_memory=True)

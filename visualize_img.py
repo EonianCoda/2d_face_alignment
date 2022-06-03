@@ -21,7 +21,7 @@ def main():
     parser.add_argument('--show_line', action="store_true")
     args = parser.parse_args()
 
-    fix_coord = cfg['fix_coord']
+    
     ### Data parameters ##
     annot_path = f"./data/{args.type}_annot.pkl"
     data_path = f"./data/{args.type}"
@@ -37,7 +37,7 @@ def main():
     elif model_type == "regressor":
         cfg.update(regressor_cfg)
 
-
+    fix_coord = cfg['fix_coord']
     test_set = get_test_dataset(data_path, annot_path, model_type)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # Create model

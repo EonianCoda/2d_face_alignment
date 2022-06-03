@@ -16,7 +16,7 @@ def main():
     parser.add_argument('--type', type=str, default="val")
     args = parser.parse_args()
 
-    fix_coord = cfg['fix_coord']
+    
     ### path ###
     annot_path = f"./data/{args.type}_annot.pkl"
     data_path = f"./data/{args.type}"
@@ -28,7 +28,7 @@ def main():
     elif model_type == "regressor":
         cfg.update(regressor_cfg)
 
-
+    fix_coord = cfg['fix_coord']
     batch_size = cfg['batch_size'] * 2
 
     test_set = get_test_dataset(data_path, annot_path, model_type)
