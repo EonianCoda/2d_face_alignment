@@ -165,7 +165,7 @@ def main():
     # Print training information
     print("Start training!!\n")
     print(f"Model type = {model_type}")
-    print(f"Backbone type = {backbone}")
+    # print(f"Backbone type = {backbone}")
 
     print(f"Loss type = {loss_type}")
     print(f"Length of training dataloader = {len(train_loader)}")

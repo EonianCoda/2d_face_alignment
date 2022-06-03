@@ -122,13 +122,13 @@ class Transform(object):
 
         # Color Jitter
         if self.is_train and self.aug_setting['colorJitter']:
-            if random.random > 0.5:
+            if random.random() > 0.5:
                 img = self.color_jitter(img)
 
         img = transforms.ToTensor()(img)
         # Gaussian Blur
         if self.is_train and self.aug_setting['gaussianBlur']:
-            if random.random > 0.5:
+            if random.random() > 0.5:
                 img = self.gaussian_blur(img)
         
         # Random noise
