@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 import argparse
 from utils.evaluation import *
 from model.tool import get_model
-from utils.dataset import get_test_dataset
+from dataset.tool import get_test_dataset
 from utils.tool import load_parameters, val
 from utils.visualize import plot_loss_68
 from cfg import *
@@ -40,7 +40,7 @@ def main():
 
     load_parameters(model, model_path)
     test_NME_loss, test_NME_loss_68 = val(model, test_loader, device, model_type, fix_coord=fix_coord)
-    print(f"Average NME Loss : {test_NME_loss:.4f}")
+    print(f"Average NME Loss : {test_NME_loss:.6f}")
     plot_loss_68(test_NME_loss_68)
     print(np.argsort(test_NME_loss_68))
 

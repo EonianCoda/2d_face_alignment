@@ -6,7 +6,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from losses.weighted_L2 import Weighted_L2
 # Model
 from model.tool import get_model
-from utils.dataset import get_train_val_dataset, get_test_dataset
+from dataset.tool import get_train_val_dataset, get_test_dataset
 from utils.tool import fixed_seed, load_parameters, train
 from utils.scheduler import Warmup_ReduceLROnPlateau
 from losses.wing_loss import Adaptive_Wing_Loss, Wing_Loss
@@ -16,7 +16,6 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser()
-    # parser.add_argument('--num_HG', type=int, default=4)
     parser.add_argument('--use_image_ratio', type=float, default=1.0)
     parser.add_argument('--exp_name', help="the name of the experiment", default="", type=str)
     parser.add_argument('--resume', action="store_true")
@@ -44,17 +43,21 @@ def main():
         backbone = cfg['backbone'][cfg['backbone_idx']]
         dropout = cfg['dropout']
 
-    ### training hyperparameter ###
-    scheduler_type = cfg['scheduler_type']
+    ## Data setting ###
     batch_size =  cfg['batch_size']
     split_ratio = cfg['split_ratio']
+    balance_data = cfg['balance_data']
+    aug_setting = cfg['aug_setting']
+    ### training hyperparameter ###
     epoch = cfg['epoch']
     seed = cfg['seed']
     lr = cfg['lr']
+
+    scheduler_type = cfg['scheduler_type']
+    optimizer_type = cfg['optimizers'][cfg['optimizer_idx']]
     loss_type = cfg['losses'][cfg['loss_idx']]
-    aug_setting = cfg['aug_setting']
+    use_weight_map = (loss_type == "weighted_L2")
     fix_coord = cfg['fix_coord']
-    balance_data = cfg['balance_data']
     ### Resume ###
     resume = args.resume
     resume_epoch = args.resume_epoch
@@ -71,10 +74,6 @@ def main():
     model = get_model(cfg)
     # Create train/val set
     print("Loading annotation...")
-    if loss_type == "weighted_L2":
-        use_weight_map = True
-    else:
-        use_weight_map = False
     train_set, val_set = get_train_val_dataset(data_root=train_data_root, 
                                                annot_path=train_annot, 
                                                train_size=split_ratio,
@@ -88,17 +87,28 @@ def main():
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers= 2, pin_memory=True, drop_last=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers= 2, pin_memory=True, drop_last=True)
 
-    # Optimizer adn criterion
-    if model_type == "classifier":
+    # Optimizer
+    if optimizer_type == "RMSprop":
         optimizer = torch.optim.RMSprop(model.parameters(),
                                         lr=lr,
                                         momentum=0.9, 
-                                        weight_decay=1e-6)
-    elif model_type == "regressor":
-        optimizer = torch.optim.RMSprop(model.parameters(),
-                                        lr=lr,
-                                        momentum=0.9, 
-                                        weight_decay=1e-6)
+                                        weight_decay=1e-6)       
+    elif optimizer_type == "SGD":
+        optimizer = torch.optim.SGD(model.parameters(),
+                                    lr=lr,
+                                    momentum=0.9, 
+                                    weight_decay=1e-6,
+                                    nesterov=True)
+    elif optimizer_type == "Adam":
+        optimizer = torch.optim.Adam(model.parameters(),
+                                    lr=lr,
+                                    momentum=0.9, 
+                                    weight_decay=1e-6)
+    elif optimizer_type == "AdamW":
+        optimizer = torch.optim.AdamW(model.parameters(),
+                                    lr=lr,
+                                    momentum=0.9, 
+                                    weight_decay=1e-6)
     # loss_type
     if loss_type == "L2":
         if model_type == "classifier":
@@ -139,6 +149,7 @@ def main():
     # model save path
     save_path = f"./save/{model_type}"
 
+    # Resuming Training
     if resume:
         if resume_model_path == "":
             raise ValueError("If resume == True, then resume model path cannot be empty")
@@ -163,13 +174,14 @@ def main():
         train_hyp['dropout'] = dropout
 
     # Print training information
+
     print("Start training!!\n")
     print(f"Model type = {model_type}")
-    # print(f"Backbone type = {backbone}")
-
     print(f"Loss type = {loss_type}")
+    print(f"Optimizer type = {optimizer_type}")
     print(f"Length of training dataloader = {len(train_loader)}")
     print(f"Fix coord = {fix_coord}")
+    print("Aug setting = ", aug_setting)
     print(f"Balance_data = {balance_data}")
     
     

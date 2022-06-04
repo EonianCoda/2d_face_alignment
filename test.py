@@ -2,7 +2,7 @@
 from pyexpat import model
 import torch
 from torch.utils.data import DataLoader
-from utils.dataset import get_pred_dataset
+from dataset.tool import get_pred_dataset
 from utils.tool import load_parameters
 from utils.visualize import read_img, plot_keypoints
 from utils.evaluation import *
@@ -41,7 +41,7 @@ def pred_imgs(model, test_loader, model_type:str, device,fix_coord = False):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', type=str)
-    parser.add_argument('--type', type=str, default="val")
+    parser.add_argument('--type', type=str, default="test")
     args = parser.parse_args()
     
     ### path ###
@@ -73,7 +73,7 @@ def main():
     # Visualize some image for checking
     idxs = [i for i in range(len(images))]
     random.shuffle(idxs)
-    for i in range(10):
+    for i in range(3):
         i = idxs[i]
         shwo_img(os.path.join(data_path, images[i]), preds[i])
     plt.show()
