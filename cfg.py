@@ -4,7 +4,7 @@ cfg = {
     'model_type': {0 : 'classifier',
                    1 : 'regressor'},
     ### Loss type ###  
-    'loss_idx': 0,
+    'loss_idx': 5,
     'losses': {0:"L2",
                 1:"L1",
                 2:"smoothL1",

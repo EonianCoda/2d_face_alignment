@@ -101,13 +101,10 @@ def main():
                                     nesterov=True)
     elif optimizer_type == "Adam":
         optimizer = torch.optim.Adam(model.parameters(),
-                                    lr=lr,
-                                    momentum=0.9, 
-                                    weight_decay=1e-6)
+                                    lr=lr)
     elif optimizer_type == "AdamW":
         optimizer = torch.optim.AdamW(model.parameters(),
                                     lr=lr,
-                                    momentum=0.9, 
                                     weight_decay=1e-6)
     # loss_type
     if loss_type == "L2":
