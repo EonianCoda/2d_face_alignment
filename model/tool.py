@@ -9,7 +9,7 @@ def get_FAN(num_HG:int = 4, HG_depth:int = 4, num_feats:int = 256, backbone:str=
         from model.FAN_SE2 import FAN
     elif backbone == "FAN_IR":
         from model.FAN_IR import FAN
-     elif backbone == "FAN_IR":
+    elif backbone == "FAN_SE_lighted":
         from model.FAN_SE_lighted import FAN
 
     return FAN(num_HG, HG_depth, num_feats)
