@@ -17,6 +17,23 @@ def depthwise_conv3x3(planes:int, stride=1, padding=1, bias=False, dilation=1):
     return nn.Conv2d(planes, planes, kernel_size=3, dilation=dilation,
                      stride=stride, padding=padding, bias=bias, groups=planes)
 
+class SELayer(nn.Module):
+    def __init__(self, channel, reduction=4):
+        super(SELayer, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+                nn.Linear(channel, channel // reduction),
+                nn.ReLU(inplace=True),
+                nn.Linear(channel // reduction, channel),
+                nn.Sigmoid(),
+        )
+
+    def forward(self, x):
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y
+
 class Depthwise_ConvBlock(nn.Module):
     def __init__(self, in_planes:int, out_planes:int):
         super(Depthwise_ConvBlock, self).__init__()
@@ -123,8 +140,13 @@ class HourGlassNet(nn.Module):
             # lower branch
             self.add_module(f"conv{level}_1", Depthwise_ConvBlock(self.num_feats, self.num_feats))
             self.add_module(f"conv{level}_2", Depthwise_ConvBlock(self.num_feats, self.num_feats))
+
+            self.add_module(f"SE{level}", SELayer(self.num_feats))
+
             if level == depth:
                 self.add_module(f"conv_middle", Depthwise_ConvBlock(self.num_feats, self.num_feats))
+            
+            
 
     def _forward(self, x, level:int):
         residual = x
@@ -143,6 +165,7 @@ class HourGlassNet(nn.Module):
             
         
         x = self._modules[f"conv{level}_2"](x)
+        x = self._modules[f"SE{level}"](x)
         x = F.interpolate(x, scale_factor=2, mode='nearest')
 
         return x + residual

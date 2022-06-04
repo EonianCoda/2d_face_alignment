@@ -48,7 +48,8 @@ classifier_cfg = {
     'backbone': {0: "FAN",
                 1: "FAN_SE",
                 2: "FAN_SE2",
-                3: "FAN_IR"},
+                3: "FAN_IR",
+                4: "FAN_SE_lighted"},
 
     ### Training hyperparameters ###
     'batch_size': 8,
