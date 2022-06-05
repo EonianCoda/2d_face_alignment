@@ -38,11 +38,13 @@ class Adaptive_Wing_Loss(nn.Module):
             pred: shape=(B, N, H, W)
             target: shape=(B, N, H, W)
         """
+        w = self.weight * (weight_map + 1)
         y = target
         y_hat = pred
         delta_y = (y - y_hat).abs()
         mask1 = delta_y < self.theta
         mask2 = delta_y >= self.theta
+        
         delta_y1 = delta_y[mask1]
         delta_y2 = delta_y[mask2]
         y1 = y[delta_y < self.theta]
@@ -56,6 +58,6 @@ class Adaptive_Wing_Loss(nn.Module):
         C = self.theta * A - self.omega * torch.log(1 + torch.pow(self.theta / self.epsilon, self.alpha - y2))
         loss2 = A * delta_y2 - C
 
-        loss1 *= weight_map[mask1]
-        loss2 *= weight_map[mask2]
+        loss1 *= w[mask1]
+        loss2 *= w[mask2]
         return (loss1.sum() + loss2.sum()) / (len(loss1) + len(loss2))
