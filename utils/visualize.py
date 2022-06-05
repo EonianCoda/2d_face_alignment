@@ -69,9 +69,8 @@ def plot_loss_68(loss:np.ndarray):
 class Heatmap_visualizer(object):
     """ref from https://stackoverflow.com/questions/42481203/heatmap-on-top-of-image
     """
-    def __init__(self):
-        self.cmp = self._get_color_map()
-    def _get_color_map(self, color="red"):
+    @staticmethod
+    def get_color_map(color="red"):
         if color == "red":
             cmp = plt.cm.Reds
         elif color == "blue":
@@ -82,7 +81,7 @@ class Heatmap_visualizer(object):
         cmp._lut[:,-1] = np.linspace(0, 1.0, 255+4)
         return cmp
 
-    def draw_heatmap(self, im, heatmap:torch.Tensor):
+    def draw_heatmap(self, im, heatmap:torch.Tensor, color="red"):
         # Processing heatmap
         if heatmap.dim() == 3:
             heatmap = heatmap.unsqueeze(dim=0)
@@ -99,5 +98,5 @@ class Heatmap_visualizer(object):
         ax.imshow(im)
         w, h, c = im.shape
         y, x = np.mgrid[0:h, 0:w]
-        im = ax.contourf(x, y, heatmap, 15, cmap=self.cmp)
+        im = ax.contourf(x, y, heatmap, 5, cmap=self.get_color_map(color))
     

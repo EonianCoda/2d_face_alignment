@@ -2,16 +2,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from model.blocks import conv1x1, conv3x3
-from model.blocks import HPM_ConvBlock, SELayer
+from model.blocks import HPM_ConvBlock, SELayer, CA_Block
 
 class HourGlassNet(nn.Module):
-    def __init__(self, depth:int, num_feats:int, resBlock=HPM_ConvBlock, use_SE=False):
+    def __init__(self, depth:int, num_feats:int, resBlock=HPM_ConvBlock, attention_block=None):
         super(HourGlassNet, self).__init__()
         self.depth = depth
         self.num_feats = num_feats
 
-        self.use_SE = use_SE
-        self.downsample = nn.AvgPool2d(kernel_size=2, stride=2)
+        self.attention_block = attention_block
+        self.downsample = nn.MaxPool2d(kernel_size=2, stride=2)
         for level in range(1, depth + 1):
             # upper branch
             self.add_module(f"shortcut{level}", resBlock(self.num_feats, self.num_feats))
@@ -19,9 +19,13 @@ class HourGlassNet(nn.Module):
             self.add_module(f"conv{level}_1", resBlock(self.num_feats, self.num_feats))
             self.add_module(f"conv{level}_2", resBlock(self.num_feats, self.num_feats))
 
-            if use_SE:
-                self.add_module(f"SE{level}", SELayer(self.num_feats))
-
+            if attention_block != None:
+                if attention_block == SELayer:
+                    self.add_module(f"attention{level}", attention_block(self.num_feats))
+                elif attention_block == CA_Block:
+                    self.add_module(f"attention{level}", attention_block(self.num_feats, 96 // (2**level), 96 // (2**level)))
+                else:
+                    raise ValueError("This attention block doesn't exist!")
             if level == depth:
                 self.add_module(f"conv_middle", resBlock(self.num_feats, self.num_feats))
 
@@ -41,8 +45,8 @@ class HourGlassNet(nn.Module):
             x = self._forward(x, level + 1)
 
         x = self._modules[f"conv{level}_2"](x)
-        if self.use_SE:
-            x = self._modules[f"SE{level}"](x)
+        if self.attention_block != None:
+            x = self._modules[f"attention{level}"](x)
         x = F.interpolate(x, scale_factor=2, mode='nearest')
 
         return x + residual
@@ -54,7 +58,7 @@ class FAN(nn.Module):
     """Facial Alignment network
     """
     def __init__(self, num_HG:int = 4, HG_depth:int = 4, num_feats:int = 256, 
-                num_classes:int = 68, resBlock=HPM_ConvBlock, use_SE=False):
+                num_classes:int = 68, resBlock=HPM_ConvBlock, attention_block=None):
         super(FAN, self).__init__()
         self.num_HG = num_HG # num of how many hourglass stack
         self.HG_dpeth = HG_depth # num of recursion in hourglass net
@@ -73,7 +77,7 @@ class FAN(nn.Module):
 
         # Stacked hourglassNet part
         for stack_idx in range(1, self.num_HG + 1):
-            self.add_module(f"HG{stack_idx}", HourGlassNet(self.HG_dpeth, self.num_feats, resBlock=resBlock, use_SE=use_SE))
+            self.add_module(f"HG{stack_idx}", HourGlassNet(self.HG_dpeth, self.num_feats, resBlock=resBlock, attention_block=attention_block))
             self.add_module(f"stack{stack_idx}_conv1", resBlock(self.num_feats, self.num_feats))
             self.add_module(f"stack{stack_idx}_conv2", conv1x1(self.num_feats, self.num_feats, bias=True))
             self.add_module(f"stack{stack_idx}_bn1", nn.BatchNorm2d(int(self.num_feats)))

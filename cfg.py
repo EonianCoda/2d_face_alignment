@@ -44,7 +44,12 @@ classifier_cfg = {
     'HG_depth':4,
     'num_feats':128,
     'fix_coord':True,
-    'use_SE': True,
+    ### Attention Block ###
+    'attention_block_idx': 0,
+    'attention_blocks': {0: "None",
+                        1: "SElayer",
+                        2: "CA_block"},
+    ### Resdiual Block ###
     'resBlock_idx': 0,
     'resBlocks': {0: "HPM_ConvBlock",
                 1: "Bottleneck",
