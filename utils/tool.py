@@ -85,6 +85,9 @@ def process_loss(model_type:str, loss_type:str, criterion, outputs:torch.Tensor,
                 raise ValueError("Weight map cannot be None!")
             for output in outputs:
                 loss += criterion(output, label, weight_map)
+        elif loss_type == "adaptive_wing_loss":
+            for output in outputs:
+                loss += criterion(output, label, weight_map)
     elif model_type == "regressor":
         loss += criterion(outputs, label)
     return loss
