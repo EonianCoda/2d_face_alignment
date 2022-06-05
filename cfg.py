@@ -11,14 +11,14 @@ cfg = {
                 3:"wing_loss",
                 4:"adaptive_wing_loss",
                 5:"weighted_L2"},
-    'balance_data': False,
     ### Optimizer Type ###  
     'optimizer_idx': 0,
     'optimizers': {0: "RMSprop",
                     1: "SGD",
                     2: "Adam",
                     3: "AdamW"},
-
+    ### Data Balance ###                  
+    'balance_data': False,
     ### Scheduler setting ###
     'scheduler_type': 1,  # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
     'warm_step': 2,   # If scheduler == 1, then use warm_epoch arg
@@ -44,12 +44,11 @@ classifier_cfg = {
     'HG_depth':4,
     'num_feats':128,
     'fix_coord':True,
-    'backbone_idx': 1,
-    'backbone': {0: "FAN",
-                1: "FAN_SE",
-                2: "FAN_SE2",
-                3: "FAN_IR",
-                4: "FAN_SE_lighted"},
+    'use_SE': True,
+    'resBlock_idx': 0,
+    'resBlocks': {0: "HPM_ConvBlock",
+                1: "Bottleneck",
+                2: "InvertedResidual"},
 
     ### Training hyperparameters ###
     'batch_size': 8,
