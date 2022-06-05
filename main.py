@@ -56,7 +56,7 @@ def main():
     scheduler_type = cfg['scheduler_type']
     optimizer_type = cfg['optimizers'][cfg['optimizer_idx']]
     loss_type = cfg['losses'][cfg['loss_idx']]
-    use_weight_map = (loss_type == "weighted_L2")
+    use_weight_map = (loss_type == "weighted_L2") or (loss_type == "adaptive_wing_loss")
     fix_coord = cfg['fix_coord']
     ### Resume ###
     resume = args.resume

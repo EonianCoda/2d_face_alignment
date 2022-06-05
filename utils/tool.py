@@ -111,7 +111,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
     best_val_epoch = 0
     best_test_epoch = 0
 
-    use_weight_map = (loss_type == "weighted_L2")
+    use_weight_map = (loss_type == "weighted_L2") or (loss_type == "adaptive_wing_loss")
 
     # Set start epoch and end epoch
     if resume_epoch != -1:
