@@ -45,7 +45,7 @@ classifier_cfg = {
     'num_feats':128,
     'fix_coord':True,
     ### Attention Block ###
-    'attention_block_idx': 0,
+    'attention_block_idx': 1,
     'attention_blocks': {0: "None",
                         1: "SElayer",
                         2: "CA_Block"},
