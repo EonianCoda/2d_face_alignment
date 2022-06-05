@@ -74,8 +74,7 @@ class Heatmap_converter(object):
         #     kernel = kernel.unsqueeze(dim=0)
         # else:
         #     kernel = self.kernel[start_y: start_y + self.window_size +1, start_x: start_x + self.window_size +1]
-        #     kernel = kernel.unsqueeze(dim=0)
-        
+        kernel = kernel.unsqueeze(dim=0)
         kernel = self.weight_kernel(kernel).squeeze(dim=0)
         # Normalize kernel
         if landmark_i < 17:
