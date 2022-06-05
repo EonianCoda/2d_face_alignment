@@ -39,7 +39,7 @@ class SELayer(nn.Module):
         return x * y
 
 class CA_Block(nn.Module):
-    def __init__(self, inp, oup, reduction=32):
+    def __init__(self, inp, oup, reduction=4):
         super(CA_Block, self).__init__()
         self.pool_h = nn.AdaptiveAvgPool2d((None, 1))
         self.pool_w = nn.AdaptiveAvgPool2d((1, None))
