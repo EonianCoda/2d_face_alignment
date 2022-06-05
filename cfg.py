@@ -47,7 +47,7 @@ classifier_cfg = {
     ### Attention Block ###
     'attention_block_idx': 1,
     'attention_blocks': {0: "None",
-                        1: "SElayer",
+                        1: "SELayer",
                         2: "CA_Block"},
     ### Resdiual Block ###
     'resBlock_idx': 0,
