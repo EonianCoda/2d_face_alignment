@@ -3,6 +3,9 @@ import torch
 from utils.convert_tool import to_numpy, is_None
 import numpy as np
 import matplotlib.pyplot as plt
+import torch
+import torch.nn.functional as F
+
 
 def read_img(im_path:str):
     return cv2.imread(im_path)
@@ -62,4 +65,39 @@ def plot_loss_68(loss:np.ndarray):
     plt.xlabel("index of landmark")
     plt.ylabel("average loss")
     plt.show()
+
+class Heatmap_visualizer(object):
+    """ref from https://stackoverflow.com/questions/42481203/heatmap-on-top-of-image
+    """
+    def __init__(self):
+        self.cmp = self._get_color_map()
+    def _get_color_map(self, color="red"):
+        if color == "red":
+            cmp = plt.cm.Reds
+        elif color == "blue":
+            cmp = plt.cm.Blues
+        elif color == "green":
+            cmp = plt.cm.Greens
+        cmp._init()
+        cmp._lut[:,-1] = np.linspace(0, 1.0, 255+4)
+        return cmp
+
+    def draw_heatmap(self, im, heatmap:torch.Tensor):
+        # Processing heatmap
+        if heatmap.dim() == 3:
+            heatmap = heatmap.unsqueeze(dim=0)
+        elif heatmap.dim() == 2:
+            heatmap = heatmap.unsqueeze(dim=0).unsqueeze(dim=0)
+        heatmap = F.interpolate(heatmap, scale_factor=(4, 4), mode='nearest')[0]
+        heatmap = heatmap.sum(dim=0)
+        heatmap = torch.clamp(heatmap, max=1.0)
+
+        im = to_numpy(im)
+        fig = plt.figure()
+        ax = plt.gca()
+        #ax.axis('off')
+        ax.imshow(im)
+        w, h, c = im.shape
+        y, x = np.mgrid[0:h, 0:w]
+        im = ax.contourf(x, y, heatmap, 15, cmap=self.cmp)
     

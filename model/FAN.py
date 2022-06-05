@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from model.utils import conv1x1, conv3x3
-from model.utils import HPM_ConvBlock, SELayer
+from model.blocks import conv1x1, conv3x3
+from model.blocks import HPM_ConvBlock, SELayer
 
 class HourGlassNet(nn.Module):
     def __init__(self, depth:int, num_feats:int, resBlock=HPM_ConvBlock, use_SE=False):
@@ -75,13 +75,13 @@ class FAN(nn.Module):
         for stack_idx in range(1, self.num_HG + 1):
             self.add_module(f"HG{stack_idx}", HourGlassNet(self.HG_dpeth, self.num_feats, resBlock=resBlock, use_SE=use_SE))
             self.add_module(f"stack{stack_idx}_conv1", resBlock(self.num_feats, self.num_feats))
-            self.add_module(f"stack{stack_idx}_conv2", conv1x1(self.num_feats, self.num_feats))
+            self.add_module(f"stack{stack_idx}_conv2", conv1x1(self.num_feats, self.num_feats, bias=True))
             self.add_module(f"stack{stack_idx}_bn1", nn.BatchNorm2d(int(self.num_feats)))
 
-            self.add_module(f"stack{stack_idx}_conv_out", conv1x1(self.num_feats, self.num_classes))
+            self.add_module(f"stack{stack_idx}_conv_out", conv1x1(self.num_feats, self.num_classes, bias=True))
             if stack_idx != self.num_HG:
-                self.add_module(f"stack{stack_idx}_conv3", conv1x1(self.num_feats, self.num_feats))
-                self.add_module(f"stack{stack_idx}_shortcut", conv1x1(self.num_classes, self.num_feats))
+                self.add_module(f"stack{stack_idx}_conv3", conv1x1(self.num_feats, self.num_feats, bias=True))
+                self.add_module(f"stack{stack_idx}_shortcut", conv1x1(self.num_classes, self.num_feats, bias=True))
         self._weight_init()
     def _weight_init(self):
         for m in self.modules():

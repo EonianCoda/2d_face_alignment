@@ -1,6 +1,6 @@
 from model.Regression import RegressionModel
 from model.FAN import FAN
-from model.utils import HPM_ConvBlock, Bottleneck, InvertedResidual
+from model.blocks import HPM_ConvBlock, Bottleneck, InvertedResidual
 def get_FAN(num_HG:int, HG_depth:int, num_feats:int, resBlock:str, use_SE:bool):
     if resBlock == "HPM_ConvBlock":
         resBlock = HPM_ConvBlock
