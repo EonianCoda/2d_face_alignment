@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from model.blocks import conv1x1, conv3x3
 from model.blocks import HPM_ConvBlock, SELayer, CA_Block
-
+import math
 class HourGlassNet(nn.Module):
     def __init__(self, depth:int, num_feats:int, resBlock=HPM_ConvBlock, attention_block=None):
         super(HourGlassNet, self).__init__()
@@ -89,8 +89,14 @@ class FAN(nn.Module):
         self._weight_init()
     def _weight_init(self):
         for m in self.modules():
+            # if isinstance(m, nn.Conv2d):
+            #     nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                #print(m.weight.size())
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+                if m.bias is not None:
+                    m.bias.data.zero_()
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
