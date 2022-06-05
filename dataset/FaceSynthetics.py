@@ -30,11 +30,19 @@ class Heatmap_converter(object):
             for x in range(kernel_w):
                 self.kernel[y, x] = gaussian_fun(y, x)
 
+
         self.kernel = self.kernel.float()
+
+        gaussian_fun = lambda y, x : math.exp(-1 * (((kernel_pad_w - x) ** 2 + (kernel_pad_w - y) ** 2) / (2 * (self.sigma + 0.5) * (self.sigma + 0.5))))
+        self.big_sigma_kernel = torch.zeros((kernel_w, kernel_w))
+        for y in range(kernel_w):
+            for x in range(kernel_w):
+                self.big_sigma_kernel[y, x] = gaussian_fun(y, x)
+
         self.weight_kernel = nn.Conv2d(1,1,kernel_size=2 ,stride=1, bias=False)
         self.weight_kernel.weight.requires_grad = False
 
-    def _get_kernel(self, offset:torch.Tensor):
+    def _get_kernel(self, landmark_i:int, offset:torch.Tensor):
         """Get 7X7 kernel from origin 9X9 kernel with offset
         Args:
             offset: a torch tensor has shape(2,)
@@ -54,8 +62,12 @@ class Heatmap_converter(object):
 
         start_x = 1 if x < 0 else 0 
         start_y = 1 if y < 0 else 0
-        kernel = self.kernel[start_y: start_y + self.window_size +1, start_x: start_x + self.window_size +1]
-        kernel = kernel.unsqueeze(dim=0)
+        if landmark_i <= 16:
+            kernel = self.big_sigma_kernel[start_y: start_y + self.window_size +1, start_x: start_x + self.window_size +1]
+            kernel = kernel.unsqueeze(dim=0)
+        else:
+            kernel = self.kernel[start_y: start_y + self.window_size +1, start_x: start_x + self.window_size +1]
+            kernel = kernel.unsqueeze(dim=0)
         
         kernel = self.weight_kernel(kernel).squeeze(dim=0)
         # Normalize kernel
@@ -74,7 +86,7 @@ class Heatmap_converter(object):
 
         heatmap = torch.zeros((label.shape[0], self.heatmap_size, self.heatmap_size)).float()
         for i, (offset, (x, y)) in enumerate(zip(offsets, label)):
-            kernel = self._get_kernel(offset)
+            kernel = self._get_kernel(i, offset)
 
             ul_h  = (max(y - self.pad_w, 0), max(x - self.pad_w, 0)) # upper left point on heatmap
             lr_h = (min(y + self.pad_w + 1, self.heatmap_size), min(x + self.pad_w + 1, self.heatmap_size)) # lower right point on heatmap

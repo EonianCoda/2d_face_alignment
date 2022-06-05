@@ -23,7 +23,7 @@ class HourGlassNet(nn.Module):
                 if attention_block == SELayer:
                     self.add_module(f"attention{level}", attention_block(self.num_feats))
                 elif attention_block == CA_Block:
-                    self.add_module(f"attention{level}", attention_block(self.num_feats, 96 // (2**level), 96 // (2**level)))
+                    self.add_module(f"attention{level}", attention_block(self.num_feats, self.num_feats))
                 else:
                     raise ValueError("This attention block doesn't exist!")
             if level == depth:
