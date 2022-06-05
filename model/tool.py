@@ -17,8 +17,6 @@ def get_FAN(num_HG:int, HG_depth:int, num_feats:int, resBlock:str, attention_blo
         attention_block = SELayer
     elif attention_block == "CA_Block":
         attention_block = CA_Block
-    attention_block
-
     return FAN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block)
     
 def get_model(cfg:dict):
