@@ -30,15 +30,7 @@ class Heatmap_converter(object):
             for x in range(kernel_w):
                 self.kernel[y, x] = gaussian_fun(y, x)
 
-
         self.kernel = self.kernel.float()
-
-        # gaussian_fun = lambda y, x : math.exp(-1 * (((kernel_pad_w - x) ** 2 + (kernel_pad_w - y) ** 2) / (2 * (self.sigma + 0.5) * (self.sigma + 0.5))))
-        # self.big_sigma_kernel = torch.zeros((kernel_w, kernel_w))
-        # for y in range(kernel_w):
-        #     for x in range(kernel_w):
-        #         self.big_sigma_kernel[y, x] = gaussian_fun(y, x)
-
         self.weight_kernel = nn.Conv2d(1,1,kernel_size=2 ,stride=1, bias=False)
         self.weight_kernel.weight.requires_grad = False
 
@@ -60,27 +52,16 @@ class Heatmap_converter(object):
         self.weight_kernel.weight.data = torch.tensor([[[[r_x * b_y, l_x * b_y],
                                                         [r_x * t_y, l_x * t_y]]]])
 
+        start_x = 1 if x < 0 else 0 
+        start_y = 1 if y < 0 else 0
+        kernel = self.kernel[start_y: start_y + self.window_size +1, start_x: start_x + self.window_size +1]
 
-        if landmark_i < 17:
-            start_x = 1 if x < 0 else 0 
-            start_y = 1 if y < 0 else 0
-            kernel = self.kernel[start_y: start_y + self.window_size +1, start_x: start_x + self.window_size +1]
-        else:
-            start_x = 2 if x < 0 else 1 
-            start_y = 2 if y < 0 else 1
-            kernel = self.kernel[start_y: start_y + self.window_size - 1, start_x: start_x + self.window_size - 1]
-        # if landmark_i <= 16:
-        #     kernel = self.big_sigma_kernel[start_y: start_y + self.window_size +1, start_x: start_x + self.window_size +1]
-        #     kernel = kernel.unsqueeze(dim=0)
-        # else:
-        #     kernel = self.kernel[start_y: start_y + self.window_size +1, start_x: start_x + self.window_size +1]
         kernel = kernel.unsqueeze(dim=0)
         kernel = self.weight_kernel(kernel).squeeze(dim=0)
         # Normalize kernel
-        if landmark_i < 17:
-            middle_p = float(kernel[self.window_size // 2, self.window_size // 2])
-        else:
-            middle_p = float(kernel[(self.window_size - 2) // 2, (self.window_size - 2) // 2])
+
+        middle_p = float(kernel[self.window_size // 2, self.window_size // 2])
+
         kernel /= middle_p
 
         return kernel
@@ -97,26 +78,15 @@ class Heatmap_converter(object):
         for i, (offset, (x, y)) in enumerate(zip(offsets, label)):
             kernel = self._get_kernel(i, offset)
 
-            if i < 17:
-                ul_h  = (max(y - self.pad_w, 0), max(x - self.pad_w, 0)) # upper left point on heatmap
-                lr_h = (min(y + self.pad_w + 1, self.heatmap_size), min(x + self.pad_w + 1, self.heatmap_size)) # lower right point on heatmap
+            ul_h  = (max(y - self.pad_w, 0), max(x - self.pad_w, 0)) # upper left point on heatmap
+            lr_h = (min(y + self.pad_w + 1, self.heatmap_size), min(x + self.pad_w + 1, self.heatmap_size)) # lower right point on heatmap
 
-                ul_k = (0 if (y - self.pad_w) > 0 else -1 * (y - self.pad_w), # upper left point on kernel
-                        0 if (x - self.pad_w) > 0 else -1 * (x - self.pad_w)) 
+            ul_k = (0 if (y - self.pad_w) > 0 else -1 * (y - self.pad_w), # upper left point on kernel
+                    0 if (x - self.pad_w) > 0 else -1 * (x - self.pad_w)) 
 
-                lr_k = ((self.window_size - max(-1 * ((self.heatmap_size - 1) - (y + self.pad_w)), 0)), # lower right point on kernel
-                        (self.window_size - max(-1 * ((self.heatmap_size - 1) - (x + self.pad_w)), 0)))
-            else:
-                pad_w = self.pad_w - 1
-                window_size = self.window_size - 2
-                ul_h  = (max(y - pad_w, 0), max(x - pad_w, 0)) # upper left point on heatmap
-                lr_h = (min(y + pad_w + 1, self.heatmap_size), min(x + pad_w + 1, self.heatmap_size)) # lower right point on heatmap
+            lr_k = ((self.window_size - max(-1 * ((self.heatmap_size - 1) - (y + self.pad_w)), 0)), # lower right point on kernel
+                    (self.window_size - max(-1 * ((self.heatmap_size - 1) - (x + self.pad_w)), 0)))
 
-                ul_k = (0 if (y - pad_w) > 0 else -1 * (y - pad_w), # upper left point on kernel
-                        0 if (x - pad_w) > 0 else -1 * (x - pad_w)) 
-
-                lr_k = ((window_size - max(-1 * ((self.heatmap_size - 1) - (y + pad_w)), 0)), # lower right point on kernel
-                        (window_size - max(-1 * ((self.heatmap_size - 1) - (x + pad_w)), 0)))
             heatmap[i, ul_h[0]:lr_h[0], ul_h[1]:lr_h[1]] = kernel[ul_k[0]:lr_k[0], ul_k[1]:lr_k[1]]
 
         return heatmap
