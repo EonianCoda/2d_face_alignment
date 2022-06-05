@@ -177,6 +177,9 @@ def main():
     print(f"Loss type = {loss_type}")
     print(f"Optimizer type = {optimizer_type}")
     print(f"Length of training dataloader = {len(train_loader)}")
+    if model_type == "classifier":
+        print(f"Resdiual Block = {cfg['resBlocks'][cfg['resBlock_idx']]}")
+        print(f"Attention Block = {cfg['attention_blocks'][cfg['attention_block_idx']]}")
     print(f"Fix coord = {fix_coord}")
     print("Aug setting = ", aug_setting)
     print(f"Balance_data = {balance_data}")
