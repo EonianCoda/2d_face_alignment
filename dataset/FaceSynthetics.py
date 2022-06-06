@@ -1,3 +1,4 @@
+from random import random
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
@@ -10,7 +11,7 @@ import math
 
 from dataset.transform import get_transform
 from utils.convert_tool import is_None
-
+import random
 
 class Heatmap_converter(object):
     def __init__(self, heatmap_size=96, window_size=7, sigma=1.75):
@@ -154,23 +155,30 @@ class FaceSynthetics(Dataset):
 
         # data weight
         if not is_None(data_weight):
-            num_normal_data = (data_weight == 2).sum()
-            print(num_normal_data, num_normal_data / len(self.images))
+            self.num_data = int(np.sum(data_weight))
 
-            idxs = np.arange(len(self.images))
+            self.mapping_idxs = []
+            for i, num in enumerate(data_weight):
+                for _ in range(int(num)):
+                    self.mapping_idxs.append(i)
+            random.shuffle(self.mapping_idxs)
+            # num_normal_data = (data_weight == 2).sum()
+            # print(num_normal_data, num_normal_data / len(self.images))
 
-            mapping_idxs = [idxs[data_weight == 2]]
-            # Type1
-            mask = (data_weight == 1)
-            mapping_idxs.append(np.random.choice(idxs[mask], max(int(num_normal_data * 0.5), mask.sum())))
-            # Type3
-            mask = (data_weight == 3)
-            mapping_idxs.append(np.random.choice(idxs[mask], max(int(num_normal_data * 0.5), mask.sum())))
+            # idxs = np.arange(len(self.images))
 
-            mapping_idxs = np.concatenate(mapping_idxs).flatten()
-            np.random.shuffle(mapping_idxs)
-            self.mapping_idxs = mapping_idxs
-            self.num_data = len(self.mapping_idxs)
+            # mapping_idxs = [idxs[data_weight == 2]]
+            # # Type1
+            # mask = (data_weight == 1)
+            # mapping_idxs.append(np.random.choice(idxs[mask], max(int(num_normal_data * 0.5), mask.sum())))
+            # # Type3
+            # mask = (data_weight == 3)
+            # mapping_idxs.append(np.random.choice(idxs[mask], max(int(num_normal_data * 0.5), mask.sum())))
+
+            # mapping_idxs = np.concatenate(mapping_idxs).flatten()
+            # np.random.shuffle(mapping_idxs)
+            # self.mapping_idxs = mapping_idxs
+            # self.num_data = len(self.mapping_idxs)
         else:
             self.num_data = len(self.images)
             self.mapping_idxs = [i for i in range(self.num_data)]

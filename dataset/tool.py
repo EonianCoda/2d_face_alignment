@@ -49,6 +49,23 @@ class PDB(object):
         pickle.dump(self.projected, open(self.cached_file, 'wb'))
 
     def get_weights(self, labels):
+        self._cal_projected(labels)
+        target = self.projected
+        values = np.sort(target)
+        img_indexs = np.argsort(target)
+
+        bins = [values.min() - 0.1,  -0.34, -0.22, 0, 0.22,  0.34, values.max() + 0.1]
+        interval_index = [(values <= bin).sum() for bin in bins]
+        # num_interval = [interval_index[i] - interval_index[i - 1] for i in range(1, len(interval_index))]
+
+        category = np.ones_like(target) * -1
+        for i in range(1, len(interval_index)):
+            start_idx = interval_index[i - 1]
+            end_idx = interval_index[i]
+            indexs = img_indexs[start_idx : end_idx]
+            category[indexs] = i
+        return category
+    def get_weights_old(self, labels):
         # Calculating projected
         self._cal_projected(labels)
         num_data = len(self.projected)
@@ -69,7 +86,6 @@ class PDB(object):
             cur_idx = indexs[i]
 
         return weights
-
 
 def get_python_version():
     py_version = python_version()
@@ -94,6 +110,84 @@ def process_annot(annot_path:str):
     return images, labels
 
 def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0,
+                            aug_setting:dict=None, use_weight_map=False,fix_coord=False, get_weight=False):
+    """Get training set and valiating set
+    Args:
+        data_root: the data root for images
+        annot_path: thh path of the annotation file
+        train_size: the size ratio of train:val
+        use_image_ratio: how many images to use in training and validation
+    """
+    images, labels = process_annot(annot_path)
+    #Split train/val set
+
+    if get_weight == True:
+        pdb = PDB(annot_path)
+        category = pdb.get_weights(labels)
+
+    indexs = np.arange(len(category))
+    categoried_idxs = []
+    # num_cat = len(np.unique(category))
+    for cat in np.unique(category):
+        mask = (category == cat)
+        temp = indexs[mask]
+        temp = temp[: int(len(temp) * use_image_ratio)]
+        np.random.shuffle(temp)
+        categoried_idxs.append(temp)
+
+    train_categoried_idxs = []
+    val_categoried_idxs = []
+    for idxs in categoried_idxs:
+        tmp = int(len(idxs) * train_size)
+        train_categoried_idxs.append(idxs[:tmp])
+        val_categoried_idxs.append(idxs[tmp:])
+
+    # Training set
+    each_cat_data = int(max([len(idxs) for idxs in train_categoried_idxs]) * 0.8)
+
+    final_train_categoried_idxs = []
+    final_use_times = []
+    for idxs in train_categoried_idxs:
+        times = each_cat_data // len(idxs)
+        use_times = np.zeros(len(idxs)) + times
+        # Not enough
+        if times * len(idxs) != each_cat_data:
+            remaining = each_cat_data - times * len(idxs)
+            target = np.random.choice(range(len(idxs)), remaining, replace=False)
+            use_times[target] += 1
+        mask = (use_times != 0)
+        final_train_categoried_idxs.append(idxs[mask])
+        final_use_times.append(use_times[mask])
+
+    train_idxs = np.concatenate(final_train_categoried_idxs, axis=0)
+    train_images = [images[i] for i in train_idxs]
+    train_labels = labels[train_idxs]
+    train_use_times = np.concatenate(final_use_times, axis=0)
+    # Validation set
+    val_idxs = np.concatenate(val_categoried_idxs, axis=0)
+    val_images = [images[i] for i in val_idxs]
+    val_labels = labels[val_idxs]
+
+    train_dataset = FaceSynthetics(data_root=data_root, 
+                                    images=train_images,
+                                    labels=train_labels,
+                                    return_gt=False,
+                                    use_weight_map=use_weight_map,
+                                    fix_coord=fix_coord,
+                                    data_weight = train_use_times,
+                                    transform='train',
+                                    aug_setting=aug_setting)
+
+    val_dataset = FaceSynthetics(data_root=data_root, 
+                                    images=val_images,
+                                    labels=val_labels,
+                                    return_gt= True,
+                                    use_weight_map=use_weight_map,
+                                    fix_coord=fix_coord,
+                                    transform='val')
+    return train_dataset, val_dataset
+
+def get_train_val_dataset_old(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0,
                             aug_setting:dict=None, use_weight_map=False,fix_coord=False, get_weight=False):
     """Get training set and valiating set
     Args:
