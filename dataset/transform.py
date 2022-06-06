@@ -107,8 +107,10 @@ class Transform(object):
             self.random_flip = RandomHorizontalFlip()
             self.random_noise = RandomNoise()
             self.random_rotation = RandomRoation()
-            self.gaussian_blur = transforms.GaussianBlur((5,5))
-            self.color_jitter = transforms.ColorJitter(brightness=0.1, contrast=0.1)
+            self.gaussian_blur = transforms.GaussianBlur((7,7), sigma=(1.0, 2.0))
+            self.color_jitter = transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3)
+
+            self.gray_transform = transforms.Grayscale(num_output_channels=3)
 
     def __call__(self, img, label):
         label = label.clone()
@@ -121,6 +123,7 @@ class Transform(object):
             img, label = self.random_rotation(img, label)
 
         img = transforms.ToTensor()(img)
+
         # Gaussian Blur
         if self.is_train and self.aug_setting['gaussianBlur']:
             if random.random() > 0.5:
@@ -134,6 +137,11 @@ class Transform(object):
         # Random noise
         if self.is_train and self.aug_setting['noise']:
             img = self.random_noise(img)
+
+        if self.is_train and self.aug_setting['grayscale']:
+            #prob = 2/3
+            if random.random() > 2/3:
+                img = self.gray_transform(img)
 
         img = self.normalize(img)
         return img, label

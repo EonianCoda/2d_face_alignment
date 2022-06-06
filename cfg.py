@@ -27,11 +27,12 @@ cfg = {
                         2: "CA_Block"},
 
     ### Augumentation Setting ###
-    'aug_setting':{'flip':False,
-                'rotation':True,
-                'noise':True,
-                'gaussianBlur':False,
-                'colorJitter':False},                    
+    'aug_setting':{'flip': False,
+                'rotation': True,
+                'noise': False,
+                'gaussianBlur': False,
+                'colorJitter': False,
+                'grayscale': False},                    
     ### Optimizer Type ###  
     'optimizer_idx': 0,
     'optimizers': {0: "RMSprop",
