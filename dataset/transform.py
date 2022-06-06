@@ -20,7 +20,7 @@ class RandomPadding(object):
         if random.random() < self.prob:
             pad_size = int(self.padding * min(random.random(), 0.5))
             new_h = h + pad_size * 2
-            img = self.pad(img, padding=pad_size)
+            img = self.pad(img, padding=pad_size, padding_mode="edge")
             img = self.resize(img, (h, w))
 
             ratio = h / new_h

@@ -146,7 +146,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), max_norm= 5.)
             optimizer.step()
-         
+            scheduler.step()
             del loss
   
         # Recording Epoch loss with tensorboard
