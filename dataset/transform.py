@@ -4,6 +4,31 @@ import torchvision.transforms.functional as F
 import random
 import math
 
+class RandomPadding(object):
+    def __init__(self, prob=0.5, padding:int=80):
+        self.prob = prob
+        self.padding = padding
+        self.pad = transforms.functional.pad
+        self.resize = transforms.functional.resize
+    def __call__(self, img, label:torch.Tensor):
+        """
+        Args:
+            img: the PIL image
+        """
+        h, w = img.size
+
+        if random.random() < self.prob:
+            pad_size = int(self.padding * min(random.random(), 0.5))
+            new_h = h + pad_size * 2
+            img = self.pad(img, padding=pad_size)
+            img = self.resize(img, (h, w))
+
+            ratio = h / new_h
+            label *= ratio
+            label += pad_size * ratio
+            
+        return img, label
+
 class RandomRoation(object):
     def __init__(self, img_shape:tuple=(384,384,3), prob=0.5, angle=(-30, 30)):
         """Random roation
@@ -111,9 +136,15 @@ class Transform(object):
             self.color_jitter = transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3)
 
             self.gray_transform = transforms.Grayscale(num_output_channels=3)
+            self.random_padding = RandomPadding()
 
     def __call__(self, img, label):
         label = label.clone()
+
+        # Random Padding
+        if self.is_train and self.aug_setting['padding']:
+            img, label = self.random_padding(img, label) 
+
         # Random flip
         if self.is_train and self.aug_setting['flip']:
             img, label = self.random_flip(img, label)
