@@ -136,6 +136,24 @@ def main():
     print("Aug setting = ", aug_setting)
     print(f"Balance_data = {balance_data}")
     
+    aug = [k for k, v in cfg['aug_setting'].items() if v]
+    aug = " ".join(aug)
+    loss_type = cfg['losses'][cfg['loss_idx']]
+    train_hyp = {'loss_type': loss_type,
+                'optimizer': cfg['optimizers'][cfg['optimizer_idx']],
+                'use_weight_map': (loss_type == "weighted_L2") or (loss_type == "adaptive_wing_loss"),
+                'lr': cfg['lr'], 
+                'use_image_ratio': use_image_ratio,
+                'fix_coord': cfg['fix_coord'],
+                'balance_data': cfg['balance_data'],
+                'augmentation': aug,
+                # model architecture
+                'num_HG': cfg['num_HG'],
+                'HG_depth': cfg['HG_depth'],
+                'num_feats': cfg['num_feats'],
+                'attention_block' : cfg['attention_blocks'][cfg['attention_block_idx']],
+                'resBlock' : cfg['resBlocks'][cfg['resBlock_idx']]}
+
     
 
     train(model=model,
@@ -151,7 +169,7 @@ def main():
         loss_type=loss_type,
         exp_name=exp_name,
         fix_coord=fix_coord,
-        cfg=cfg,
+        train_hyp=train_hyp,
         resume_epoch=resume_epoch)
 
     

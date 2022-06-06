@@ -9,6 +9,7 @@ def NME(pred, gt, average=True, return_68=False) -> float:
         raise ValueError("Prediction and ground truth should have same dimensions!")
 
     dist_68 = np.sqrt(np.sum((pred - gt) ** 2, axis=-1)) / 384 # shpae = ([bs], 68)
+    dist_68 *= 100
     dist = np.mean(dist_68, axis=-1)  # shpae = ([bs])
 
     if average:

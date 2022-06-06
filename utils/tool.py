@@ -81,7 +81,7 @@ def process_loss(loss_type:str, criterion, outputs:torch.Tensor, label:torch.Ten
 
     return loss
 def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, 
-        loss_type:str, exp_name="", cfg=dict(), resume_epoch=-1,fix_coord=False):
+        loss_type:str, exp_name="", train_hyp=dict(), resume_epoch=-1,fix_coord=False):
     start_train = time.time()
     # Create writerr for recording loss
     if exp_name == "":
@@ -230,24 +230,6 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
     print(f"Best validating NME loss {best_val_NME_loss:.6f} on epoch {best_val_epoch}")
     print(f"Best testing NME loss {best_test_NME_loss:.6f} on epoch {best_test_epoch}")
 
-
-    aug = [k for k, v in cfg['aug_setting'].items() if v]
-    aug = " ".join(aug)
-    loss_type = cfg['losses'][cfg['loss_idx']]
-    train_hyp = {'loss_type': loss_type,
-                'optimizer': cfg['optimizers'][cfg['optimizer_idx']],
-                'use_weight_map': (loss_type == "weighted_L2") or (loss_type == "adaptive_wing_loss"),
-                'lr': cfg['lr'], 
-                'use_image_ratio': cfg['use_image_ratio'],
-                'fix_coord': cfg['fix_coord'],
-                'balance_data': cfg['balance_data'],
-                'augmentation': aug,
-                # model architecture
-                'num_HG': cfg['num_HG'],
-                'HG_depth': cfg['HG_depth'],
-                'num_feats': cfg['num_feats'],
-                'attention_block' : cfg['attention_blocks'][cfg['attention_block_idx']],
-                'resBlock' : cfg['resBlocks'][cfg['resBlock_idx']]}
 
     metric_result = dict()
     metric_result['Best/val_NME_loss'] = best_val_NME_loss
