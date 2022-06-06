@@ -19,7 +19,7 @@ class Warmup_ReduceLROnPlateau(_LRScheduler):
         for group_idx, lr in enumerate(self.get_lr()):
             print("Epoch {:4d}: Adjusting learning rate of group {} to {:4e}.".format(self.last_epoch, group_idx, lr))
 
-    def step(self,metric=None):
+    def step(self, metric=None):
         cur_lr = self.get_lr()
         self.last_epoch = 1 if self.last_epoch == 0 else self.last_epoch + 1
         if self.last_epoch < self.warm_up_epoch:

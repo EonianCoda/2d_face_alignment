@@ -111,6 +111,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
         start_epoch = 1
         end_epoch = epoch + 1
 
+    global_step = 0
     # Starting training
     for epoch in range(start_epoch, end_epoch):
         print(f'epoch = {epoch}')
@@ -125,7 +126,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
         # Training part
         model.train()
         train_loss = 0.0
-        for data in tqdm(train_loader):
+        for i, data in enumerate(tqdm(train_loader)):
             if use_weight_map:
                 img, label, weight_map = data
                 weight_map = weight_map.to(device)
@@ -146,7 +147,10 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), max_norm= 5.)
             optimizer.step()
-         
+            if i % 3 == 0 and global_step < scheduler.warm_up_epoch:
+                scheduler.step()
+                global_step += 1
+
             del loss
   
         # Recording Epoch loss with tensorboard
@@ -197,7 +201,9 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                                 scalar_value=float(test_NME_loss), 
                                 global_step=epoch)
         # Scheduler steping
-        scheduler.step(val_NME_loss)
+        if global_step >= scheduler.warm_up_epoch:
+            scheduler.step(val_NME_loss)
+        
 
         # Display the results
         end_time = time.time()

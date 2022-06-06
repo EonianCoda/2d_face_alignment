@@ -1,6 +1,6 @@
 cfg = {
     ### Loss type ###  
-    'loss_idx': 5,
+    'loss_idx': 0,
     'losses': {0:"L2",
                 1:"L1",
                 2:"smoothL1",
@@ -12,24 +12,24 @@ cfg = {
     'balance_data': False,
     ### Scheduler setting ###
     'scheduler_type': 1,  # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
-    'warm_step': 2,   # If scheduler == 1, then use warm_epoch arg
+    'warm_step': 200,   # If scheduler == 1, then use warm_epoch arg
     'patience': 3,
 
     ### Model arichitecture ###
     'num_HG': 2,
     'HG_depth':4,
     'num_feats':128,
-    'fix_coord':True,
+    'fix_coord': False,
     ### Attention Block ###
-    'attention_block_idx': 1,
+    'attention_block_idx': 0,
     'attention_blocks': {0: "None",
                         1: "SELayer",
                         2: "CA_Block"},
 
     ### Augumentation Setting ###
     'aug_setting':{'flip':False,
-                'rotation':True,
-                'noise':True,
+                'rotation':False,
+                'noise':False,
                 'gaussianBlur':False,
                 'colorJitter':False},                    
     ### Optimizer Type ###  
