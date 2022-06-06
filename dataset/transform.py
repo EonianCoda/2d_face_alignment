@@ -8,8 +8,8 @@ class RandomPadding(object):
     def __init__(self, prob=0.5, padding:int=80):
         self.prob = prob
         self.padding = padding
-        self.pad = transforms.functional.pad
-        self.resize = transforms.functional.resize
+        self.pad = F.pad
+        self.resize = F.resize
     def __call__(self, img, label:torch.Tensor):
         """
         Args:
@@ -134,7 +134,6 @@ class Transform(object):
             self.random_rotation = RandomRoation()
             self.gaussian_blur = transforms.GaussianBlur((7,7), sigma=(1.0, 2.0))
             self.color_jitter = transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3)
-
             self.gray_transform = transforms.Grayscale(num_output_channels=3)
             self.random_padding = RandomPadding()
 
@@ -174,7 +173,7 @@ class Transform(object):
             if random.random() > 2/3:
                 img = self.gray_transform(img)
 
-        img = self.normalize(img)
+        #img = self.normalize(img)
         return img, label
 
 

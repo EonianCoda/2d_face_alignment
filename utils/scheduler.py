@@ -9,9 +9,10 @@ class Warmup_ReduceLROnPlateau(_LRScheduler):
         self.cur_step = 0
         self.after_scheduler = ReduceLROnPlateau(optimizer, patience=patience)
         self.verbose = verbose
-        super().__init__(optimizer)
+        
         self.last_step = 0
         self.ratio = self.warm_up_step / 20
+        super(Warmup_ReduceLROnPlateau, self).__init__(optimizer)
     def get_lr(self) -> float:
         if self.last_step < self.warm_up_step:
             cur_ratio = math.ceil(self.last_step / self.ratio) / (self.warm_up_step / self.ratio)
