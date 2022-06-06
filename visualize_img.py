@@ -31,14 +31,9 @@ def main():
     show_index = args.show_index
     show_bad = args.show_bad
     ### model setting ###
-    model_type = cfg['model_type'][cfg['model_type_idx']]
-    if model_type == "classifier":
-        cfg.update(classifier_cfg)
-    elif model_type == "regressor":
-        cfg.update(regressor_cfg)
 
     fix_coord = cfg['fix_coord']
-    test_set = get_test_dataset(data_path, annot_path, model_type)
+    test_set = get_test_dataset(data_path, annot_path)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # Create model
     model = get_model(cfg)
@@ -58,10 +53,8 @@ def main():
             img, _ , gt_label = test_set.__getitem__(i)
             img = img.to(device).unsqueeze(dim=0)
             outputs = model(img)
-            if model_type == "classifier":
-                pred = heatmap_to_landmark(outputs, fix_coord=fix_coord)
-            elif model_type == "regressor":
-                pred = outputs.detach().cpu()
+            pred = heatmap_to_landmark(outputs, fix_coord=fix_coord)
+          
             pred = pred[0]
             NME_loss = NME(pred, gt_label)
             if (show_bad and NME_loss >= BAD_LOSS) or not show_bad:

@@ -93,7 +93,7 @@ def process_annot(annot_path:str):
     images = [images[i] for i in valid_idxs]
     return images, labels
 
-def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0, model_type="classifier",
+def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0,
                             aug_setting:dict=None, use_weight_map=False,fix_coord=False, get_weight=False):
     """Get training set and valiating set
     Args:
@@ -127,7 +127,6 @@ def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_ima
     train_dataset = FaceSynthetics(data_root=data_root, 
                                     images=train_images,
                                     labels=train_labels,
-                                    model_type=model_type,
                                     return_gt=False,
                                     use_weight_map=use_weight_map,
                                     fix_coord=fix_coord,
@@ -137,19 +136,17 @@ def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_ima
     val_dataset = FaceSynthetics(data_root=data_root, 
                                     images=val_images,
                                     labels=val_labels,
-                                    model_type=model_type,
                                     return_gt= True,
                                     use_weight_map=use_weight_map,
                                     fix_coord=fix_coord,
                                     transform='val')
     return train_dataset, val_dataset
 
-def get_test_dataset(data_path:str, annot_path:str, model_type:str):
+def get_test_dataset(data_path:str, annot_path:str):
     images, labels = process_annot(annot_path)
     test_dataset = FaceSynthetics(data_root=data_path, 
                                     images=images,
                                     labels=labels,
-                                    model_type=model_type,
                                     return_gt= True,
                                     transform='test')
     return test_dataset

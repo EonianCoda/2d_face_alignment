@@ -20,7 +20,7 @@ def shwo_img(img_path, label):
     plt.figure()
     plt.imshow(im)
 
-def pred_imgs(model, test_loader, model_type:str, device,fix_coord = False):
+def pred_imgs(model, test_loader, device,fix_coord = False):
     model = model.to(device)
     preds = []
 
@@ -29,10 +29,7 @@ def pred_imgs(model, test_loader, model_type:str, device,fix_coord = False):
             data = data.to(device)
             outputs = model(data)
 
-            if model_type == "classifier":
-                pred = heatmap_to_landmark(outputs, fix_coord =fix_coord)
-            elif model_type == "regressor":
-                pred = outputs.detach().cpu()
+            pred = heatmap_to_landmark(outputs, fix_coord =fix_coord)
             
             preds.append(pred)
     preds = torch.cat(preds, dim=0)
@@ -47,12 +44,6 @@ def main():
     ### path ###
     data_path = f"./data/{args.type}"
     model_path = args.model_path
-    ### model setting ###
-    model_type = cfg['model_type'][cfg['model_type_idx']]
-    if model_type == "classifier":
-        cfg.update(classifier_cfg)
-    elif model_type == "regressor":
-        cfg.update(regressor_cfg)
 
     fix_coord = cfg['fix_coord']
     batch_size = cfg['batch_size'] * 2
@@ -66,7 +57,6 @@ def main():
     preds = pred_imgs(model=model, 
                         test_loader=test_loader, 
                         device=device,
-                        model_type=model_type,
                         fix_coord=fix_coord)
     images = test_set.images
 

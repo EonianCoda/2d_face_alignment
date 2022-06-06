@@ -26,20 +26,18 @@ def fixed_seed(myseed:int):
         torch.cuda.manual_seed_all(myseed)
         torch.cuda.manual_seed(myseed)
 
-def load_parameters(model, path, optimizer=None, scheduler=None, model_type:str=""):
+def load_parameters(model, path, optimizer=None, scheduler=None):
     print(f'Loading model parameters from {path}...')
     param = torch.load(path)
     model.load_state_dict(param)
 
     if optimizer != None and scheduler!= None:
-        if model_type == "":
-            raise ValueError("If optimizer and scheduler are given, then model_type cannot be empty!")
-        optimizer.load_state_dict(torch.load(os.path.join(f"./save/{model_type}", "optimizer.pt")))
-        scheduler.load_state_dict(torch.load(os.path.join(f"./save/{model_type}", "scheduler.pt")))
+        optimizer.load_state_dict(torch.load(os.path.join(f"./save/optimizer.pt")))
+        scheduler.load_state_dict(torch.load(os.path.join(f"./save/scheduler.pt")))
 
     print("End of loading !!!")
 
-def val(model, test_loader, device, model_type:str,fix_coord=False):
+def val(model, test_loader, device, fix_coord=False):
     print("Starting Validation....")
     
     model = model.to(device)
@@ -56,11 +54,7 @@ def val(model, test_loader, device, model_type:str,fix_coord=False):
 
             outputs = model(img)
 
-            if model_type == "classifier":
-                pred = heatmap_to_landmark(outputs,fix_coord=fix_coord)
-            elif model_type == "regressor":
-                pred = outputs.detach().cpu()
-
+            pred = heatmap_to_landmark(outputs,fix_coord=fix_coord)
             pred_loss, pred_loss_68 = NME(pred, gt_label, average=False, return_68=True)
             num_data += img.shape[0]
             total_NME_loss += pred_loss
@@ -70,35 +64,30 @@ def val(model, test_loader, device, model_type:str,fix_coord=False):
 
     return (total_NME_loss / num_data), (total_NEM_loss_68 / num_data)
 
-def process_loss(model_type:str, loss_type:str, criterion, outputs:torch.Tensor, label:torch.Tensor, weight_map:torch.Tensor=None):
+def process_loss(loss_type:str, criterion, outputs:torch.Tensor, label:torch.Tensor, weight_map:torch.Tensor=None):
     loss = 0
-    if model_type == "classifier":
-        if loss_type =="L2":
-            num_target = (label != 0).sum()
-            for output in outputs:
-                loss += criterion(output, label) / num_target
-        elif loss_type == "wing_loss":
-            for output in outputs:
-                loss += criterion(output, label)
-        elif loss_type == "weighted_L2":
-            if weight_map == None:
-                raise ValueError("Weight map cannot be None!")
-            for output in outputs:
-                loss += criterion(output, label, weight_map)
-        elif loss_type == "adaptive_wing_loss":
-            for output in outputs:
-                loss += criterion(output, label, weight_map)
-    elif model_type == "regressor":
-        loss += criterion(outputs, label)
+    if loss_type =="L2":
+        num_target = (label != 0).sum()
+        for output in outputs:
+            loss += criterion(output, label) / num_target
+    elif loss_type == "wing_loss":
+        for output in outputs:
+            loss += criterion(output, label)
+    elif loss_type == "weighted_L2" or loss_type == "adaptive_wing_loss":
+        if weight_map == None:
+            raise ValueError("Weight map cannot be None!")
+        for output in outputs:
+            loss += criterion(output, label, weight_map)
+
     return loss
 def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, 
-        model_type:str, loss_type:str, exp_name="", train_hyp:dict=dict(), only_save_best=False, resume_epoch=-1,fix_coord=False):
+        loss_type:str, exp_name="", train_hyp:dict=dict(), resume_epoch=-1,fix_coord=False):
     start_train = time.time()
     # Create writerr for recording loss
     if exp_name == "":
         writer = SummaryWriter()
     else:
-        path = f"./runs/{model_type}"
+        path = f"./runs/"
         os.makedirs(path,exist_ok=True)
         writer = SummaryWriter(os.path.join(path, exp_name))
 
@@ -149,7 +138,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
             label = label.to(device)
             outputs = model(img)
             # Calculate Loss
-            loss = process_loss(model_type, loss_type, criterion, outputs, label, weight_map)
+            loss = process_loss(loss_type, criterion, outputs, label, weight_map)
 
             # Backward and update
             train_loss += loss.item()
@@ -186,13 +175,10 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                 outputs = model(img)
 
                 # intermediate supervision
-                loss = process_loss(model_type, loss_type, criterion, outputs, label, weight_map)
+                loss = process_loss(loss_type, criterion, outputs, label, weight_map)
                 val_loss += loss.item()
                 # Calculate loss with groud truth label
-                if model_type == "classifier":
-                    pred_label = heatmap_to_landmark(outputs, fix_coord=fix_coord)
-                elif model_type == "regressor":
-                    pred_label = outputs.detach().cpu()
+                pred_label = heatmap_to_landmark(outputs, fix_coord=fix_coord)
 
                 val_NME_loss += NME(pred_label, gt_label)
 
@@ -206,7 +192,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                             scalar_value=float(val_loss), 
                             global_step=epoch)
         # Testing part
-        test_NME_loss, test_NME_loss_68 = val(model, test_loader, device, model_type, fix_coord=fix_coord)
+        test_NME_loss, test_NME_loss_68 = val(model, test_loader, device, fix_coord=fix_coord)
         writer.add_scalar(tag="test/NME_loss",
                                 scalar_value=float(test_NME_loss), 
                                 global_step=epoch)
@@ -229,13 +215,13 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
         if test_NME_loss < best_test_NME_loss:
             best_test_NME_loss = test_NME_loss
             best_test_epoch = epoch
+            torch.save(model.state_dict(), os.path.join(save_path, 'best.pt'))
         if val_NME_loss < best_val_NME_loss:
             best_val_NME_loss = val_NME_loss
             best_val_epoch = epoch
-            torch.save(model.state_dict(), os.path.join(save_path, 'best.pt'))
-        if not only_save_best:
-            torch.save(model.state_dict(), os.path.join(save_path, f'{epoch}.pt'))
-        # Save scheduler and optimizer
+        
+        # Save model, scheduler and optimizer
+        torch.save(model.state_dict(), os.path.join(save_path, f'{epoch}.pt'))
         torch.save(optimizer.state_dict(), os.path.join(save_path, f'optimizer.pt'))
         torch.save(scheduler.state_dict(), os.path.join(save_path, f'scheduler.pt'))
 

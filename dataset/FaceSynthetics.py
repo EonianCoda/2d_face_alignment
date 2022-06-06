@@ -129,7 +129,7 @@ class Old_heatmap_converter(object):
 
 class FaceSynthetics(Dataset):
     def __init__(self, data_root:str, images:list, labels:np.ndarray, transform="train", 
-                model_type="classifier", aug_setting:dict=None, heatmap_size=96, return_gt=True, 
+                aug_setting:dict=None, heatmap_size=96, return_gt=True, 
                 use_weight_map=False, fix_coord=False, data_weight=None) -> None:
         """
         Args:
@@ -138,12 +138,10 @@ class FaceSynthetics(Dataset):
             labels: training labels
             gt_labels: groud truth labels
             transform: 
-            model_type: the type of model, there are two option: "regrssion" or "classifier"
             heatmap_size: when model type == "classifier", then use this argument for generate heatmap
         """
         super(FaceSynthetics, self).__init__()
         self.data_root = data_root
-        self.model_type = model_type
         self.return_gt = return_gt
         self.use_weight_map = use_weight_map
         # transform
@@ -179,12 +177,10 @@ class FaceSynthetics(Dataset):
 
 
         # heatmap converter
-        if self.model_type == "classifier":
-            if fix_coord:
-                self.converter = Heatmap_converter(heatmap_size)
-            else:
-                self.converter = Old_heatmap_converter(heatmap_size)
-            # self.heatmap_size = heatmap_size
+        if fix_coord:
+            self.converter = Heatmap_converter(heatmap_size)
+        else:
+            self.converter = Old_heatmap_converter(heatmap_size)
 
     def __len__(self):
         return self.num_data
@@ -216,8 +212,7 @@ class FaceSynthetics(Dataset):
         if self.return_gt:
             gt_label = label.clone()
         # transform point to heatmap
-        if self.model_type == "classifier":
-            label = self.converter.convert(label)
+        label = self.converter.convert(label)
 
         if self.return_gt and self.use_weight_map:
             return im, label, gt_label, self._generate_weight_map(label)
