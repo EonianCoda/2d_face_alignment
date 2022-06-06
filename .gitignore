@@ -7,3 +7,5 @@ save
 runs
 *.ipynb
 *.pt
+*.png
+old_runs
