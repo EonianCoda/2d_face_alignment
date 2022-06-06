@@ -31,7 +31,7 @@ class Adaptive_Wing_Loss(nn.Module):
         self.theta = theta
         self.epsilon = epsilon
         self.alpha = alpha
-
+        self.weight = 10
     def forward(self, pred, target, weight_map):
         """
         Args:
