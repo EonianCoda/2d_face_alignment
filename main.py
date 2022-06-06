@@ -125,21 +125,7 @@ def main():
         load_parameters(model, resume_model_path, optimizer, scheduler)
 
 
-    aug = [k for k, v in aug_setting.items() if v]
-    aug = " ".join(aug)
-    train_hyp = {'lr':lr, 
-                'bsize': batch_size,
-                'loss_type':loss_type,
-                'use_image_ratio': use_image_ratio,
-                'warm_step': warm_step,
-                'augmentation':aug}
-
-    # train_hyp['num_HG'] = num_HG
-    # train_hyp['HG_depth'] = HG_depth
-
-
     # Print training information
-
     print("Start training!!\n")
     print(f"Loss type = {loss_type}")
     print(f"Optimizer type = {optimizer_type}")
@@ -164,8 +150,8 @@ def main():
         optimizer=optimizer,
         loss_type=loss_type,
         exp_name=exp_name,
-        train_hyp=train_hyp,
         fix_coord=fix_coord,
+        cfg=cfg,
         resume_epoch=resume_epoch)
 
     
