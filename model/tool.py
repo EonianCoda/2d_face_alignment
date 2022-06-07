@@ -1,5 +1,6 @@
 from model.FAN import FAN
 from model.FAN_boundary import Boundary_FAN
+from model.FAN_SD import FAN_SD
 from model.blocks import HPM_ConvBlock, Bottleneck, InvertedResidual
 from model.blocks import CA_Block, SELayer
 
@@ -10,7 +11,7 @@ def get_model(cfg:dict):
     num_feats = cfg['num_feats']
     resBlock = cfg['resBlocks'][cfg['resBlock_idx']]
     attention_block = cfg['attention_blocks'][cfg['attention_block_idx']]
-
+    
     # Residual Block
     if resBlock == "HPM_ConvBlock":
         resBlock = HPM_ConvBlock
@@ -30,9 +31,13 @@ def get_model(cfg:dict):
     with_r = cfg['with_r']
 
     add_boundary = cfg['add_boundary']
+    SD = cfg['SD']
     if not add_boundary:
         return FAN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block,
                 use_CoordConv=use_CoordConv, add_CoordConv_inHG=add_CoordConv_inHG, with_r=with_r)
+    elif SD:
+        return FAN_SD(num_HG, HG_depth, num_feats, attention_block=attention_block,use_CoordConv=use_CoordConv,
+                     add_CoordConv_inHG=add_CoordConv_inHG, with_r=with_r)
     else:
         return Boundary_FAN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block,
                             with_r=with_r)

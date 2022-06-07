@@ -102,7 +102,7 @@ def process_boundary(loss_type:str, criterion, outputs:torch.Tensor, boundary:to
     return loss
 
 def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, 
-        loss_type:str, exp_name="", train_hyp=dict(), resume_epoch=-1,fix_coord=False, add_boundary=False):
+        loss_type:str, exp_name="", train_hyp=dict(), resume_epoch=-1,fix_coord=False, SD=False, SD_start_epoch=0,add_boundary=False):
     start_train = time.time()
     # Create writerr for recording loss
     if exp_name == "":
@@ -134,6 +134,9 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
 
     # Starting training
     for epoch in range(start_epoch, end_epoch):
+        if SD and SD_start_epoch == epoch:
+            print("Starting Dropping !!")
+            model.start_drop(True)
         print(f'epoch = {epoch}')
         start_time = time.time()
 

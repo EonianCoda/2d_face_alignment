@@ -17,6 +17,8 @@ cfg = {
     'patience': 3,
 
     ### Model arichitecture ###
+    'SD': False,
+    'SD_start_epoch': 0,
     'num_HG': 2,
     'HG_depth':4,
     'num_feats':128,

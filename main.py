@@ -64,6 +64,8 @@ def main():
     loss_type = cfg['losses'][cfg['loss_idx']]
     use_weight_map = (loss_type == "weighted_L2") or (loss_type == "adaptive_wing_loss")
     fix_coord = cfg['fix_coord']
+    SD = cfg['SD']
+    SD_start_epoch = cfg['SD_start_epoch']
     ### Resume ###
     resume = args.resume
     resume_epoch = args.resume_epoch
@@ -169,6 +171,7 @@ def main():
     print(f"Add add_boundary = {cfg['add_boundary']}")
     print("Aug setting = ", aug_setting)
     print(f"Balance_data = {balance_data}")
+    print(f"Stochastic Depth(SD) = {SD}")
     
     aug = [k for k, v in cfg['aug_setting'].items() if v]
     aug = " ".join(aug)
@@ -184,6 +187,7 @@ def main():
                 'augmentation': aug,
                 'seed': cfg['seed'],
                 'add_boundary': cfg['add_boundary'],
+                'SD': cfg['SD'],
                 # model architecture
                 'num_HG': cfg['num_HG'],
                 'HG_depth': cfg['HG_depth'],
@@ -210,6 +214,8 @@ def main():
         exp_name=exp_name,
         fix_coord=fix_coord,
         add_boundary=add_boundary,
+        SD=SD,
+        SD_start_epoch=SD_start_epoch,
         train_hyp=train_hyp,
         resume_epoch=resume_epoch)
 
