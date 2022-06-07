@@ -20,7 +20,9 @@ cfg = {
     'HG_depth':4,
     'num_feats':128,
     'fix_coord':False,
-    'use_CoordConv':False,
+    'use_CoordConv': False,
+    'with_r': False,
+    'add_CoordConv_inHG': False,
     ### Attention Block ###
     'attention_block_idx': 0,
     'attention_blocks': {0: "None",

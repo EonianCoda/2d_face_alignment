@@ -133,6 +133,9 @@ def main():
     print(f"Resdiual Block = {cfg['resBlocks'][cfg['resBlock_idx']]}")
     print(f"Attention Block = {cfg['attention_blocks'][cfg['attention_block_idx']]}")
     print(f"Fix coord = {fix_coord}")
+    print(f"Use CoordConv = {cfg['use_CoordConv']}")
+    print(f"With_r = {cfg['with_r']}")
+    print(f"Add CoordConv inHG = {cfg['add_CoordConv_inHG']}")
     print("Aug setting = ", aug_setting)
     print(f"Balance_data = {balance_data}")
     
@@ -154,6 +157,8 @@ def main():
                 'HG_depth': cfg['HG_depth'],
                 'num_feats': cfg['num_feats'],
                 'use_CoordConv':cfg['use_CoordConv'],
+                'with_r': cfg['with_r'],
+                'add_CoordConv_inHG':cfg['add_CoordConv_inHG'],
                 'attention_block' : cfg['attention_blocks'][cfg['attention_block_idx']],
                 'resBlock' : cfg['resBlocks'][cfg['resBlock_idx']]}
 

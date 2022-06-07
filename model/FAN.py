@@ -6,11 +6,14 @@ from model.blocks import HPM_ConvBlock, SELayer, CA_Block
 from model.blocks import CoordConv
 import math
 class HourGlassNet(nn.Module):
-    def __init__(self, depth:int, num_feats:int, resBlock=HPM_ConvBlock, attention_block=None):
+    def __init__(self, depth:int, num_feats:int, resBlock=HPM_ConvBlock, attention_block=None, add_CoordConv=False, with_r=False):
         super(HourGlassNet, self).__init__()
         self.depth = depth
         self.num_feats = num_feats
 
+        self.add_CoordConv = add_CoordConv
+        if self.add_CoordConv:
+            self.coordConv = CoordConv(self.num_feats, self.num_feats, with_r=with_r, kernel_size=1, stride=1, padding=0)
         self.attention_block = attention_block
         self.downsample = nn.MaxPool2d(kernel_size=2, stride=2)
         for level in range(1, depth + 1):
@@ -53,13 +56,16 @@ class HourGlassNet(nn.Module):
         return x + residual
 
     def forward(self, x):
+        if self.add_CoordConv:
+            x = self.coordConv(x)
+
         return self._forward(x, 1)
 
 class FAN(nn.Module):
     """Facial Alignment network
     """
     def __init__(self, num_HG:int = 4, HG_depth:int = 4, num_feats:int = 256, 
-                num_classes:int = 68, resBlock=HPM_ConvBlock, attention_block=None,use_CoordConv=False):
+                num_classes:int = 68, resBlock=HPM_ConvBlock, attention_block=None,use_CoordConv=False, with_r=False, add_CoordConv_inHG=False):
         super(FAN, self).__init__()
         self.num_HG = num_HG # num of how many hourglass stack
         self.HG_dpeth = HG_depth # num of recursion in hourglass net
@@ -70,7 +76,7 @@ class FAN(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.max_pool2d = nn.MaxPool2d(kernel_size=2, stride=2)
         if use_CoordConv:
-            self.conv1 = CoordConv(3, self.num_feats // 4, kernel_size=7, stride=2, padding=3)
+            self.conv1 = CoordConv(3, self.num_feats // 4, with_r=with_r, kernel_size=7, stride=2, padding=3)
         else:
             self.conv1 = nn.Conv2d(3, self.num_feats // 4, kernel_size=7, stride=2, padding=3)
         self.bn1 = nn.BatchNorm2d(self.num_feats // 4)
@@ -80,7 +86,7 @@ class FAN(nn.Module):
 
         # Stacked hourglassNet part
         for stack_idx in range(1, self.num_HG + 1):
-            self.add_module(f"HG{stack_idx}", HourGlassNet(self.HG_dpeth, self.num_feats, resBlock=resBlock, attention_block=attention_block))
+            self.add_module(f"HG{stack_idx}", HourGlassNet(self.HG_dpeth, self.num_feats, resBlock=resBlock, attention_block=attention_block, add_CoordConv=add_CoordConv_inHG, with_r=with_r))
             self.add_module(f"stack{stack_idx}_conv1", resBlock(self.num_feats, self.num_feats))
             self.add_module(f"stack{stack_idx}_conv2", conv1x1(self.num_feats, self.num_feats, bias=True))
             self.add_module(f"stack{stack_idx}_bn1", nn.BatchNorm2d(int(self.num_feats)))

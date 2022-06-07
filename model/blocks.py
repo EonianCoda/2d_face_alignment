@@ -238,7 +238,8 @@ class CoordConv(nn.Module):
     def __init__(self, in_channels, out_channels, with_r=False, **kwargs):
         super().__init__()
         self.addcoords = AddCoords(with_r=with_r)
-        self.conv = nn.Conv2d(in_channels + 2, out_channels, **kwargs)
+        extra_channel = 3 if with_r else 2
+        self.conv = nn.Conv2d(in_channels + extra_channel, out_channels, **kwargs)
 
     def forward(self, x):
         ret = self.addcoords(x)
