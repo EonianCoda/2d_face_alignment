@@ -10,8 +10,7 @@ cfg = {
 
     ### Data Balance ###
     'balance_data': False,
-    ### Boundary ###
-    'add_boundary': False,
+
     ### Scheduler setting ###
     'scheduler_type': 1,  # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
     'warm_step': 500,   # If scheduler == 1, then use warm_epoch arg
@@ -21,12 +20,13 @@ cfg = {
     'num_HG': 2,
     'HG_depth':4,
     'num_feats':128,
-    'fix_coord':True,
-    'use_CoordConv': False,
+    'fix_coord': False,
+    'add_boundary': False,
+    'use_CoordConv': False,  # if addBoundary == True, then this arg is useless.
     'with_r': False,
-    'add_CoordConv_inHG': False,
+    'add_CoordConv_inHG': False,  # if addBoundary == True, then this arg is useless.
     ### Attention Block ###
-    'attention_block_idx': 1,
+    'attention_block_idx': 0,
     'attention_blocks': {0: "None",
                         1: "SELayer",
                         2: "CA_Block"},

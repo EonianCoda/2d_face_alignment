@@ -16,7 +16,7 @@ class HourGlassNet(nn.Module):
                                     y_dim=96,
                                     with_r=with_r, 
                                     with_boundary=True,
-                                    in_channels=self.num_feats, 
+                                    in_channels=self.num_feats,
                                     first_one=first_one,
                                     out_channels=self.num_feats,
                                     kernel_size=1,
@@ -65,7 +65,7 @@ class HourGlassNet(nn.Module):
         return x + residual
 
     def forward(self, x, heatmap):
-        x, last_channel = self.coordconv(x, heatmap)
+        x, last_channel = self.coordConv(x, heatmap)
         return self._forward(x, 1), last_channel
 
 class Boundary_FAN(nn.Module):
@@ -73,7 +73,7 @@ class Boundary_FAN(nn.Module):
     """
     def __init__(self, num_HG:int = 4, HG_depth:int = 4, num_feats:int = 256, 
                 num_classes:int = 68, resBlock=HPM_ConvBlock, attention_block=None,
-                 use_CoordConv=False, with_r=False, end_relu=False):
+                 with_r=False, end_relu=False):
         super(Boundary_FAN, self).__init__()
         self.num_HG = num_HG # num of how many hourglass stack
         self.HG_dpeth = HG_depth # num of recursion in hourglass net
@@ -83,15 +83,14 @@ class Boundary_FAN(nn.Module):
         # Base part
         self.relu = nn.ReLU(inplace=True)
         self.max_pool2d = nn.MaxPool2d(kernel_size=2, stride=2)
-        if use_CoordConv:
-            #self.conv1 = CoordConv(3, self.num_feats // 4, with_r=with_r, kernel_size=7, stride=2, padding=3)
-            self.conv1 = CoordConvTh(x_dim=384, y_dim=384,
-                                     with_r=with_r, with_boundary=False,
-                                     in_channels=3, out_channels=self.num_feats // 4,
-                                     kernel_size=7,
-                                     stride=2, padding=3)
-        else:
-            self.conv1 = nn.Conv2d(3, self.num_feats // 4, kernel_size=7, stride=2, padding=3)
+
+
+        self.conv1 = CoordConvTh(x_dim=384, y_dim=384,
+                                    with_r=with_r, with_boundary=False,
+                                    in_channels=3, out_channels=self.num_feats // 4,
+                                    kernel_size=7,
+                                    stride=2, padding=3)
+
         self.bn1 = nn.BatchNorm2d(self.num_feats // 4)
         self.conv2 = resBlock(self.num_feats // 4, self.num_feats // 2)
         self.conv3 = resBlock(self.num_feats // 2, self.num_feats // 2)
@@ -134,7 +133,8 @@ class Boundary_FAN(nn.Module):
         boundary_channels = []
         tmp_out = None
         # Base part
-        x = self.relu(self.bn1(self.conv1(x)))
+        x, _ = self.conv1(x)
+        x = self.relu(self.bn1(x))
         x = self.conv2(x)
         x = self.max_pool2d(x)
         x = self.conv3(x)

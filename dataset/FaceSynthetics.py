@@ -30,7 +30,7 @@ def fig2data(fig):
     buf.shape = (w, h, 3)
 
     # canvas.tostring_argb give pixmap in ARGB mode. Roll the ALPHA channel to have it in RGBA mode
-    buf = np.roll (buf, 3, axis=2)
+    buf = np.roll(buf, 3, axis=2)
     return buf
 
 
@@ -39,7 +39,7 @@ class AddBoundary(object):
         self.num_landmarks = num_landmarks
 
     def __call__(self, sample):
-        landmarks_64 = np.floor(sample['label'] / 4.0)
+        landmarks_64 = np.floor(sample['label'].numpy() / 4.0)
 
         boundaries = {}
         boundaries['cheek'] = landmarks_64[0:17]
@@ -109,7 +109,7 @@ class AddBoundary(object):
 
         boundary_map = fig2data(fig)
 
-        sample['boundary'] = boundary_map[:, :, 0]
+        sample['boundary'] = torch.from_numpy(boundary_map[:, :, 0])
 
         return sample
 
