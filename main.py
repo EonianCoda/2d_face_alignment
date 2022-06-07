@@ -15,6 +15,23 @@ from cfg import *
 
 import argparse
 
+def add_weight_decay(net, l2_value):
+    """ref from https://cinnamonaitaiwan.medium.com/%E5%8D%B7%E7%A9%8D%E7%A5%9E%E7%B6%93%E7%B6%B2%E8%B7%AF%E5%84%AA%E5%8C%96part1-bag-of-tricks-for-improving-your-neural-networks-training-8fd407d37071
+    """
+    decay, no_decay = [], []
+    for name, param in net.named_parameters():
+        if not param.requires_grad:
+            continue  # skip frozen weights
+        # skip bias and bn layer
+        if name.endswith(".bias") or ("_bn" in name):
+            no_decay.append(param)
+        else:
+            decay.append(param)
+    return [
+        {"params": no_decay, "weight_decay": 0.0},
+        {"params": decay, "weight_decay": l2_value},
+    ]
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--use_image_ratio', type=float, default=1.0)
@@ -87,25 +104,23 @@ def main():
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers= 2, pin_memory=True, drop_last=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers= 2, pin_memory=True, drop_last=True)
 
+    params = add_weight_decay(model, 1e-6)
     # Optimizer
     if optimizer_type == "RMSprop":
-        optimizer = torch.optim.RMSprop(model.parameters(),
+        optimizer = torch.optim.RMSprop(params,
                                         lr=lr,
-                                        momentum=0.9, 
-                                        weight_decay=1e-6)       
+                                        momentum=0.9)       
     elif optimizer_type == "SGD":
-        optimizer = torch.optim.SGD(model.parameters(),
+        optimizer = torch.optim.SGD(params,
                                     lr=lr,
-                                    momentum=0.9, 
-                                    weight_decay=1e-6,
+                                    momentum=0.9,
                                     nesterov=True)
     elif optimizer_type == "Adam":
-        optimizer = torch.optim.Adam(model.parameters(),
+        optimizer = torch.optim.Adam(params,
                                     lr=lr)
     elif optimizer_type == "AdamW":
-        optimizer = torch.optim.AdamW(model.parameters(),
-                                    lr=lr,
-                                    weight_decay=1e-6)
+        optimizer = torch.optim.AdamW(params,
+                                    lr=lr)
     # loss_type
     if loss_type == "L2":
         criterion = nn.MSELoss(reduction="sum")

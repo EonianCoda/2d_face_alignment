@@ -321,9 +321,9 @@ class FaceSynthetics(Dataset):
             weight_map[i][dilate>0.2] = 1
         return weight_map
     def __getitem__(self, idx:int):
+        idx = self.index_mapping(idx)
         # For colab
         if not self.IN_COLAB:
-            idx = self.index_mapping(idx)
             # Read imagee
             img_path = os.path.join(self.data_root, self.images[idx])
             im = Image.open(img_path)

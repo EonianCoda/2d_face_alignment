@@ -9,7 +9,7 @@ cfg = {
                 5:"weighted_L2"},
 
     ### Data Balance ###
-    'balance_data': True,
+    'balance_data': False,
 
     ### Scheduler setting ###
     'scheduler_type': 1,  # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
