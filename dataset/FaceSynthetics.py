@@ -109,7 +109,7 @@ class AddBoundary(object):
 
         boundary_map = fig2data(fig)
 
-        sample['boundary'] = torch.from_numpy(boundary_map[:, :, 0])
+        sample['boundary'] = torch.from_numpy(boundary_map[:, :, 0]).float().div(255.0)
 
         return sample
 

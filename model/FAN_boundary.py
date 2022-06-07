@@ -107,10 +107,10 @@ class Boundary_FAN(nn.Module):
             self.add_module(f"stack{stack_idx}_conv2", conv1x1(self.num_feats, self.num_feats, bias=True))
             self.add_module(f"stack{stack_idx}_bn1", nn.BatchNorm2d(int(self.num_feats)))
 
-            self.add_module(f"stack{stack_idx}_conv_out", conv1x1(self.num_feats, self.num_classes, bias=True))
+            self.add_module(f"stack{stack_idx}_conv_out", conv1x1(self.num_feats, self.num_classes+1, bias=True))
             if stack_idx != self.num_HG:
                 self.add_module(f"stack{stack_idx}_conv3", conv1x1(self.num_feats, self.num_feats, bias=True))
-                self.add_module(f"stack{stack_idx}_shortcut", conv1x1(self.num_classes, self.num_feats, bias=True))
+                self.add_module(f"stack{stack_idx}_shortcut", conv1x1(self.num_classes+1, self.num_feats, bias=True))
         self._weight_init()
     def _weight_init(self):
         for m in self.modules():
@@ -130,7 +130,9 @@ class Boundary_FAN(nn.Module):
                 m.bias.data.zero_()
     def forward(self, x):
         outputs = []
+        boundary_outputs = []
         boundary_channels = []
+
         tmp_out = None
         # Base part
         x, _ = self.conv1(x)
@@ -153,11 +155,12 @@ class Boundary_FAN(nn.Module):
             tmp_out = self._modules[f"stack{stack_idx}_conv_out"](x)
             if self.end_relu:
                 tmp_out = F.relu(tmp_out) # HACK: Added relu
-            outputs.append(tmp_out)
-            boundary_channels.append(boundary_channel)
+            outputs.append(tmp_out[:, :-1,...])
+            boundary_outputs.append(tmp_out[:, -1,...])
+            #boundary_channels.append(boundary_channel)
             # lower and upper branch
             if stack_idx != self.num_HG:
                 x = self._modules[f"stack{stack_idx}_conv3"](x)
                 out_ = self._modules[f"stack{stack_idx}_shortcut"](tmp_out)
                 x = out_ + residual + x
-        return outputs, boundary_channels
+        return outputs, boundary_outputs
