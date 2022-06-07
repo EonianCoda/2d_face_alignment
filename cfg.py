@@ -21,7 +21,7 @@ cfg = {
     'HG_depth':4,
     'num_feats':128,
     'fix_coord': False,
-    'add_boundary': False,
+    'add_boundary': True,
     'use_CoordConv': False,  # if addBoundary == True, then this arg is useless.
     'with_r': False,
     'add_CoordConv_inHG': False,  # if addBoundary == True, then this arg is useless.

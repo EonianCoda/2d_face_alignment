@@ -35,4 +35,4 @@ def get_model(cfg:dict):
                 use_CoordConv=use_CoordConv, add_CoordConv_inHG=add_CoordConv_inHG, with_r=with_r)
     else:
         return Boundary_FAN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block,
-                            use_CoordConv=use_CoordConv, with_r=with_r)
+                            with_r=with_r)

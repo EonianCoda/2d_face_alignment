@@ -101,7 +101,7 @@ class Boundary_FAN(nn.Module):
             if stack_idx == 1:
                 first_one = True
             else:
-                first_one == False
+                first_one = False
             self.add_module(f"HG{stack_idx}", HourGlassNet(self.HG_dpeth, self.num_feats, resBlock=resBlock, attention_block=attention_block, with_r=with_r, first_one=first_one))
             self.add_module(f"stack{stack_idx}_conv1", resBlock(self.num_feats, self.num_feats))
             self.add_module(f"stack{stack_idx}_conv2", conv1x1(self.num_feats, self.num_feats, bias=True))

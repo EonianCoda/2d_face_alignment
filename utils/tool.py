@@ -163,12 +163,15 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
             img = img.to(device)
             label = label.to(device)
             if add_boundary:
+                
                 outputs, pred_boundary = model(img)
             else:
                 outputs = model(img)
             # Calculate Loss
             loss = process_loss(loss_type, criterion, outputs, label, weight_map)
             if add_boundary:
+                # print(boundary.shape)
+                # print(pred_boundary[0].shape, pred_boundary[1].shape, len(pred_boundary))
                 boundary_loss = process_boundary(loss_type, criterion, pred_boundary, boundary, weight_map)
                 loss += boundary_loss
             # Backward and update

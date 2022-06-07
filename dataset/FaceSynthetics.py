@@ -135,7 +135,7 @@ class Heatmap_converter(object):
         self.weight_kernel = nn.Conv2d(1,1,kernel_size=2 ,stride=1, bias=False)
         self.weight_kernel.weight.requires_grad = False
 
-    def _get_kernel(self, landmark_i:int, offset:torch.Tensor):
+    def _get_kernel(self, offset:torch.Tensor):
         """Get 7X7 kernel from origin 9X9 kernel with offset
         Args:
             offset: a torch tensor has shape(2,)
@@ -177,7 +177,7 @@ class Heatmap_converter(object):
 
         heatmap = torch.zeros((label.shape[0], self.heatmap_size, self.heatmap_size)).float()
         for i, (offset, (x, y)) in enumerate(zip(offsets, label)):
-            kernel = self._get_kernel(i, offset)
+            kernel = self._get_kernel(offset)
 
             ul_h  = (max(y - self.pad_w, 0), max(x - self.pad_w, 0)) # upper left point on heatmap
             lr_h = (min(y + self.pad_w + 1, self.heatmap_size), min(x + self.pad_w + 1, self.heatmap_size)) # lower right point on heatmap
