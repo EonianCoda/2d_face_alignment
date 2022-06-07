@@ -151,7 +151,7 @@ class FaceSynthetics(Dataset):
         self.images = images
         self.labels= torch.tensor(labels)
         self.num_classes = len(self.labels[0])
-
+        # For colab
         try:
             import google.colab
             self.IN_COLAB = True
@@ -227,6 +227,7 @@ class FaceSynthetics(Dataset):
             weight_map[i][dilate>0.2] = 1
         return weight_map
     def __getitem__(self, idx:int):
+        # For colab
         if not self.IN_COLAB:
             idx = self.index_mapping(idx)
             # Read imagee
@@ -234,20 +235,27 @@ class FaceSynthetics(Dataset):
             im = Image.open(img_path)
         else:
             im = self.img_data[idx]
-        im, label = self.transform(im, self.labels[idx])
-        if self.return_gt:
-            gt_label = label.clone()
-        # transform point to heatmap
-        label = self.converter.convert(label)
 
-        if self.return_gt and self.use_weight_map:
-            return im, label, gt_label, self._generate_weight_map(label)
-        elif self.return_gt:
-            return im, label, gt_label
-        elif self.use_weight_map:
-            return im, label, self._generate_weight_map(label)
-        else:
-            return im, label
+        sample = {'img':im, 'label':self.labels[idx]}
+        
+        sample = self.transform(sample)
+        if self.return_gt:
+            sample['gt_label'] = sample['label'].clone()
+
+        # transform point to heatmap
+        sample['label'] = self.converter.convert(sample['label'])
+
+
+        if self.use_weight_map:
+            sample['weight_map'] = self._generate_weight_map(sample['label'])
+        return sample
+        #     return im, label, gt_label, self._generate_weight_map(label)
+        # elif self.return_gt:
+        #     return im, label, gt_label
+        # elif self.use_weight_map:
+        #     return im, label, self._generate_weight_map(label)
+        # else:
+        #     return im, label
 
 class Predicting_FaceSynthetics(Dataset):
     def __init__(self, data_root:str, images:list) -> None:

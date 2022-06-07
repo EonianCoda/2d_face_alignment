@@ -50,7 +50,8 @@ def main():
         num_cur_show = 0
         for i in idxs:
             img_path = test_set.images[i]
-            img, _ , gt_label = test_set.__getitem__(i)
+            sample = test_set.__getitem__(i)
+            img, gt_label = sample['img'], sample['gt_label']
             img = img.to(device).unsqueeze(dim=0)
             outputs = model(img)
             pred = heatmap_to_landmark(outputs, fix_coord=fix_coord)

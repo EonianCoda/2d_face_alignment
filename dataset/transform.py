@@ -1,3 +1,4 @@
+from cProfile import label
 import torch
 from torchvision.transforms import transforms
 import torchvision.transforms.functional as F
@@ -10,24 +11,24 @@ class RandomPadding(object):
         self.padding = padding
         self.pad = F.pad
         self.resize = F.resize
-    def __call__(self, img, label:torch.Tensor):
+    def __call__(self, sample:dict):
         """
         Args:
             img: the PIL image
         """
-        h, w = img.size
-
+        h, w = sample['img'].size
+        
         if random.random() < self.prob:
             pad_size = int(self.padding * min(random.random(), 0.5))
             new_h = h + pad_size * 2
-            img = self.pad(img, padding=pad_size, padding_mode="edge")
-            img = self.resize(img, (h, w))
+            sample['img'] = self.pad(sample['img'], padding=pad_size, padding_mode="edge")
+            sample['img'] = self.resize(sample['img'], (h, w))
 
             ratio = h / new_h
-            label *= ratio
-            label += pad_size * ratio
+            sample['label'] *= ratio
+            sample['label'] += pad_size * ratio
             
-        return img, label
+        return sample
 
 class RandomRoation(object):
     def __init__(self, img_shape:tuple=(384,384,3), prob=0.5, angle=(-30, 30)):
@@ -57,25 +58,30 @@ class RandomRoation(object):
         points = points.T + center
         return points
 
-    def __call__(self, img, label:torch.Tensor):
+    def __call__(self, sample:dict):
+
         if random.random() < self.prob:
+            label = sample['label'].clone()
+            img = sample['img']
+
             h, w, c = self.img_shape
-            origin_label = label.clone()
             
             angle_i = random.randint(0, len(self.angle_list)-1)
             angle = self.angle_list[angle_i]
-            r_img = F.rotate(img, angle)
+            r_img = F.rotate(img,  angle)
 
             rot_matrix = self.rot_matrices[angle_i]
 
             r_label = self._rotate_points(label, w, h, rot_matrix) # Rotate label
             # Out of bound
             if (r_label < 0).any() or (r_label >= h).any():
-                return img, origin_label
+                return sample
 
-            return r_img, r_label
+            sample['label'] = r_label
+            sample['img'] = r_img
+            return sample
 
-        return img, label
+        return sample
 
 class RandomHorizontalFlip(object):
     def __init__(self, flip_x=0.5):
@@ -83,14 +89,16 @@ class RandomHorizontalFlip(object):
         self.mapping = [[0, 1, 2, 3, 4, 5, 6, 7, 17, 18, 19, 20, 21, 36, 37, 38, 39, 41, 40, 31, 32, 50, 49, 48, 61, 60, 67, 59, 58], 
                         [16, 15, 14, 13, 12, 11, 10, 9, 26, 25, 24, 23, 22, 45, 44, 43, 42, 46, 47, 35, 34, 52, 53, 54, 63, 64, 65, 55, 56]]
         self.do_mapping = True
-    def __call__(self, img, label:torch.Tensor):
+    def __call__(self, sample:torch.Tensor):
         """
         Args:
             img: the PIL image
         """
-        h, w = img.size
         if random.random() < self.flip_x:
-            img = F.hflip(img) #transforms.RandomHorizontalFlip(1.0)(img)
+            label = sample['label']
+            h, w = sample['img'].size
+
+            sample['img'] = F.hflip(sample['img']) #transforms.RandomHorizontalFlip(1.0)(img)
             # Flip x coordinate
             label[:, 0] = (h - 1) - label[:, 0]
             if self.do_mapping:
@@ -98,25 +106,26 @@ class RandomHorizontalFlip(object):
                 label[self.mapping[1], ...] = label[self.mapping[0], ...]
                 label[self.mapping[0], ...] = tmp
 
-        return img, label
+        return sample
 
 class RandomNoise(object):
     def __init__(self, prob=0.5, ratio=0.1):
         self.prob = prob
         self.ratio = ratio
-    def __call__(self, img):
-        c, h, w = img.shape
+    def __call__(self, sample):
+        
         if random.random() < self.prob:
+            c, h, w = sample['img'].shape
             noise_num = int(random.random() * self.ratio * h * w)
             for _ in range(noise_num):
                 prob = random.random()
                 pos_x = int((w - 1) * random.random())
                 pos_y = int((h - 1) * random.random())
                 if prob > 0.5:
-                    img[:,pos_y, pos_x] = 0.0
+                    sample['img'][:,pos_y, pos_x] = 0.0
                 else:
-                    img[:,pos_y, pos_x] = 1.0 
-        return img
+                    sample['img'][:,pos_y, pos_x] = 1.0 
+        return sample
 
 class Transform(object):
     def __init__(self, is_train=True, aug_setting:dict=None):
@@ -137,44 +146,43 @@ class Transform(object):
             self.gray_transform = transforms.Grayscale(num_output_channels=3)
             self.random_padding = RandomPadding()
 
-    def __call__(self, img, label):
-        label = label.clone()
-
+    def __call__(self, sample:dict):
+        sample['label'] = sample['label'].clone()
         # Random Padding
         if self.is_train and self.aug_setting['padding']:
-            img, label = self.random_padding(img, label) 
+            sample = self.random_padding(sample) 
 
         # Random flip
         if self.is_train and self.aug_setting['flip']:
-            img, label = self.random_flip(img, label)
+            sample = self.random_flip(sample)
 
         # Random rotation
         if self.is_train and self.aug_setting['rotation']:
-            img, label = self.random_rotation(img, label)
+            sample = self.random_rotation(sample)
 
-        img = transforms.ToTensor()(img)
+        sample['img'] = transforms.ToTensor()(sample['img'])
 
         # Gaussian Blur
         if self.is_train and self.aug_setting['gaussianBlur']:
             if random.random() > 0.5:
-                img = self.gaussian_blur(img)
+                sample['img'] = self.gaussian_blur(sample['img'])
         
         # Color Jitter
         if self.is_train and self.aug_setting['colorJitter']:
             if random.random() > 0.5:
-                img = self.color_jitter(img)
+                sample['img'] = self.color_jitter(sample['img'])
         
         # Random noise
         if self.is_train and self.aug_setting['noise']:
-            img = self.random_noise(img)
+            sample = self.random_noise(sample)
 
         if self.is_train and self.aug_setting['grayscale']:
             #prob = 2/3
             if random.random() > 2/3:
-                img = self.gray_transform(img)
+                sample['img'] = self.gray_transform(sample['img'])
 
         #img = self.normalize(img)
-        return img, label
+        return sample
 
 
 def get_transform(data_type="train", aug_setting:dict=None):

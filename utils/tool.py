@@ -47,9 +47,9 @@ def val(model, test_loader, device, fix_coord=False):
     num_data = 0
 
     model.eval()
-    for data in tqdm(test_loader):
+    for sample in tqdm(test_loader):
         with torch.no_grad():
-            img, _ , gt_label = data
+            img, gt_label = sample['img'], sample['gt_label']
             img = img.to(device)
 
             outputs = model(img)
@@ -125,12 +125,12 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
         # Training part
         model.train()
         train_loss = 0.0
-        for data in tqdm(train_loader):
+        for sample in tqdm(train_loader):
             if use_weight_map:
-                img, label, weight_map = data
+                img, label, weight_map = sample['img'], sample['label'], sample['weight_map']
                 weight_map = weight_map.to(device)
             else:
-                img, label = data
+                img, label = sample['img'], sample['label']
                 weight_map = None
 
             # Forward part
@@ -161,12 +161,12 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
             model.eval()
             val_loss = 0.0
             val_NME_loss = 0.0
-            for data in tqdm(val_loader):
+            for sample in tqdm(val_loader):
                 if use_weight_map:
-                    img, label, gt_label, weight_map = data
+                    img, label, gt_label, weight_map = sample['img'], sample['label'], sample['gt_label'], sample['weight_map']
                     weight_map = weight_map.to(device)
                 else:
-                    img, label, gt_label = data
+                    img, label, gt_label = sample['img'], sample['label'], sample['gt_label']
                     weight_map = None
 
                 # Forward part
