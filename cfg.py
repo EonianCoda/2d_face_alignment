@@ -20,6 +20,7 @@ cfg = {
     'HG_depth':4,
     'num_feats':128,
     'fix_coord':False,
+    'use_CoordConv':False,
     ### Attention Block ###
     'attention_block_idx': 0,
     'attention_blocks': {0: "None",

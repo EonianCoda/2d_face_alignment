@@ -159,11 +159,12 @@ class FaceSynthetics(Dataset):
             self.IN_COLAB = False
         img_path = "./data/train_imgs.pkl"
         img_data = "./data/train_data.pkl"
-        if self.IN_COLAB and os.path.isfile(img_path) and os.path.isfile(img_data)
+        if self.IN_COLAB and os.path.isfile(img_path) and os.path.isfile(img_data):
             import pickle
             old_images = pickle.load(open(img_path,'rb'))
             # Test if same
             for a,b in zip(self.images, old_images):
+                a = os.path.basename(a)
                 if a != b:
                     self.IN_COLAB = False
                     break

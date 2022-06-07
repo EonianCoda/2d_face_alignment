@@ -24,5 +24,6 @@ def get_model(cfg:dict):
         attention_block = SELayer
     elif attention_block == "CA_Block":
         attention_block = CA_Block
+    use_CoordConv = cfg['use_CoordConv']
 
-    return FAN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block)
+    return FAN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block,use_CoordConv=use_CoordConv)

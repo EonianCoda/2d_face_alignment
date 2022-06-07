@@ -153,6 +153,7 @@ def main():
                 'num_HG': cfg['num_HG'],
                 'HG_depth': cfg['HG_depth'],
                 'num_feats': cfg['num_feats'],
+                'use_CoordConv':cfg['use_CoordConv'],
                 'attention_block' : cfg['attention_blocks'][cfg['attention_block_idx']],
                 'resBlock' : cfg['resBlocks'][cfg['resBlock_idx']]}
 
