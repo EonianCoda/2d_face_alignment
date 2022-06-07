@@ -87,7 +87,7 @@ class AddBoundary(object):
             out = interpolate.splev(xnew, functions[key][0], der=0)
             plt.plot(out[0], out[1], ',', linewidth=1, color='w')
 
-        plt.savefig("test.png")
+        #plt.savefig("test.png")
 
         img = fig2data(fig)
         

@@ -157,13 +157,12 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                 
             # Add boundary
             if add_boundary:
-                boundary = sample['boundary']
+                boundary = sample['boundary'].to(device)
 
             # Forward part
             img = img.to(device)
             label = label.to(device)
             if add_boundary:
-                
                 outputs, pred_boundary = model(img)
             else:
                 outputs = model(img)
@@ -202,7 +201,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                     weight_map = sample['weight_map'].to(device)
                 # Add boundary
                 if add_boundary:
-                    boundary = sample['boundary']
+                    boundary = sample['boundary'].to(device)
                 # Forward part
                 img = img.to(device)
                 label = label.to(device)
