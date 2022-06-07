@@ -146,7 +146,9 @@ def main():
                 'use_image_ratio': use_image_ratio,
                 'fix_coord': cfg['fix_coord'],
                 'balance_data': cfg['balance_data'],
+                'warm_step': cfg['warm_step'],
                 'augmentation': aug,
+                'seed': cfg['seed'],
                 # model architecture
                 'num_HG': cfg['num_HG'],
                 'HG_depth': cfg['HG_depth'],
