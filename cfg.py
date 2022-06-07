@@ -9,7 +9,7 @@ cfg = {
                 5:"weighted_L2"},
 
     ### Data Balance ###
-    'balance_data': False,
+    'balance_data': True,
 
     ### Scheduler setting ###
     'scheduler_type': 1,  # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
@@ -21,7 +21,7 @@ cfg = {
     'HG_depth':4,
     'num_feats':128,
     'fix_coord': False,
-    'add_boundary': True,
+    'add_boundary': False,
     'use_CoordConv': False,  # if addBoundary == True, then this arg is useless.
     'with_r': False,
     'add_CoordConv_inHG': False,  # if addBoundary == True, then this arg is useless.

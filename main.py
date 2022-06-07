@@ -1,4 +1,5 @@
 # Torch
+from copyreg import pickle
 import torch
 from torch.utils.data import DataLoader
 import torch.nn as nn
@@ -6,7 +7,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from losses.weighted_L2 import Weighted_L2
 # Model
 from model.tool import get_model
-from dataset.tool import get_train_val_dataset, get_test_dataset
+from dataset.tool import get_train_val_dataset, get_test_dataset, get_train_val_dataset_balanced
 from utils.tool import fixed_seed, load_parameters, train
 from utils.scheduler import Warmup_ReduceLROnPlateau
 from losses.wing_loss import Adaptive_Wing_Loss, Wing_Loss
@@ -61,16 +62,28 @@ def main():
     model = get_model(cfg)
     # Create train/val set
     print("Loading annotation...")
-    train_set, val_set = get_train_val_dataset(data_root=train_data_root, 
-                                               annot_path=train_annot, 
-                                               train_size=split_ratio,
-                                               use_image_ratio=use_image_ratio,
-                                               use_weight_map=use_weight_map,
-                                               fix_coord=fix_coord,
-                                               get_weight=balance_data,
-                                               add_boundary=add_boundary,
-                                               aug_setting=aug_setting)
+    if balance_data:
+        print("Balance data !!! ")
+        train_set, val_set = get_train_val_dataset_balanced(data_root=train_data_root, 
+                                                annot_path=train_annot, 
+                                                train_size=split_ratio,
+                                                use_image_ratio=use_image_ratio,
+                                                use_weight_map=use_weight_map,
+                                                fix_coord=fix_coord,
+                                                add_boundary=add_boundary,
+                                                aug_setting=aug_setting)
+        
+    else:
+        train_set, val_set = get_train_val_dataset(data_root=train_data_root, 
+                                                annot_path=train_annot, 
+                                                train_size=split_ratio,
+                                                use_image_ratio=use_image_ratio,
+                                                use_weight_map=use_weight_map,
+                                                fix_coord=fix_coord,
+                                                add_boundary=add_boundary,
+                                                aug_setting=aug_setting)
     print("End of Loading annotation!!!")
+
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers= 2, pin_memory=True, drop_last=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers= 2, pin_memory=True, drop_last=True)
 

@@ -14,7 +14,7 @@ from utils.convert_tool import is_None
 from scipy import interpolate
 import matplotlib.pyplot as plt
 import cv2
-
+import random
 def fig2data(fig):
     """
     @brief Convert a Matplotlib figure to a 4D numpy array with RGBA channels and return it
@@ -259,8 +259,12 @@ class FaceSynthetics(Dataset):
             self.IN_COLAB = True
         except:
             self.IN_COLAB = False
-        img_path = "./data/train_imgs.pkl"
-        img_data = "./data/train_data.pkl"
+        if is_None(data_weight):
+            img_path = "./data/train_imgs.pkl"
+            img_data = "./data/train_data.pkl"
+        else:
+            img_path = "./data/train_imgs_balanced.pkl"
+            img_data = "./data/train_data_balanced.pkl"
         if self.IN_COLAB and os.path.isfile(img_path) and os.path.isfile(img_data):
             import pickle
             old_images = pickle.load(open(img_path,'rb'))
@@ -284,23 +288,13 @@ class FaceSynthetics(Dataset):
             self.add_boundary = None
         # data weight
         if not is_None(data_weight):
-            num_normal_data = (data_weight == 2).sum()
-            print(num_normal_data, num_normal_data / len(self.images))
+            self.num_data = int(np.sum(data_weight))
 
-            idxs = np.arange(len(self.images))
-
-            mapping_idxs = [idxs[data_weight == 2]]
-            # Type1
-            mask = (data_weight == 1)
-            mapping_idxs.append(np.random.choice(idxs[mask], max(int(num_normal_data * 0.5), mask.sum())))
-            # Type3
-            mask = (data_weight == 3)
-            mapping_idxs.append(np.random.choice(idxs[mask], max(int(num_normal_data * 0.5), mask.sum())))
-
-            mapping_idxs = np.concatenate(mapping_idxs).flatten()
-            np.random.shuffle(mapping_idxs)
-            self.mapping_idxs = mapping_idxs
-            self.num_data = len(self.mapping_idxs)
+            self.mapping_idxs = []
+            for i, num in enumerate(data_weight):
+                for _ in range(int(num)):
+                    self.mapping_idxs.append(i)
+            random.shuffle(self.mapping_idxs)
         else:
             self.num_data = len(self.images)
             self.mapping_idxs = [i for i in range(self.num_data)]
@@ -317,14 +311,7 @@ class FaceSynthetics(Dataset):
     
     def index_mapping(self, idx:int):
         return self.mapping_idxs[idx]
-        # if self.extra_num_data == 0:
-        #     return idx
-        # else:
-        #     if idx >= self.max_idx:
-        #         idx = np.random.choice(range(self.max_idx), p=self.data_weight)
-        #         return int(idx)
-        #     else:
-        #         return idx
+
     @staticmethod
     def _generate_weight_map(heatmap):
         weight_map = torch.zeros_like(heatmap)
