@@ -10,6 +10,7 @@ from scipy.spatial import procrustes
 from dataset.FaceSynthetics import FaceSynthetics
 from dataset.FaceSynthetics import Predicting_FaceSynthetics
 
+
 class PDB(object):
     """Pose-based data balancing
     """
@@ -94,7 +95,8 @@ def process_annot(annot_path:str):
     return images, labels
 
 def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0,
-                            aug_setting:dict=None, use_weight_map=False,fix_coord=False, get_weight=False):
+                            aug_setting:dict=None, use_weight_map=False,fix_coord=False, 
+                            get_weight=False, add_boundary=False):
     """Get training set and valiating set
     Args:
         data_root: the data root for images
@@ -131,6 +133,7 @@ def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_ima
                                     use_weight_map=use_weight_map,
                                     fix_coord=fix_coord,
                                     data_weight = train_weights,
+                                    add_boundary= add_boundary,
                                     transform='train',
                                     aug_setting=aug_setting)
     val_dataset = FaceSynthetics(data_root=data_root, 
@@ -138,6 +141,7 @@ def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_ima
                                     labels=val_labels,
                                     return_gt= True,
                                     use_weight_map=use_weight_map,
+                                    add_boundary= add_boundary,
                                     fix_coord=fix_coord,
                                     transform='val')
     return train_dataset, val_dataset

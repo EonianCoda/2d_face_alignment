@@ -11,6 +11,107 @@ import math
 from dataset.transform import get_transform
 from utils.convert_tool import is_None
 
+from scipy import interpolate
+import matplotlib.pyplot as plt
+import cv2
+
+def fig2data(fig):
+    """
+    @brief Convert a Matplotlib figure to a 4D numpy array with RGBA channels and return it
+    @param fig a matplotlib figure
+    @return a numpy 3D array of RGBA values
+    """
+    # draw the renderer
+    fig.canvas.draw ( )
+
+    # Get the RGB buffer from the figure
+    w,h = fig.canvas.get_width_height()
+    buf = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+    buf.shape = (w, h, 3)
+
+    # canvas.tostring_argb give pixmap in ARGB mode. Roll the ALPHA channel to have it in RGBA mode
+    buf = np.roll (buf, 3, axis=2)
+    return buf
+
+
+class AddBoundary(object):
+    def __init__(self, num_landmarks=68):
+        self.num_landmarks = num_landmarks
+
+    def __call__(self, sample):
+        landmarks_64 = np.floor(sample['label'] / 4.0)
+
+        boundaries = {}
+        boundaries['cheek'] = landmarks_64[0:17]
+        boundaries['left_eyebrow'] = landmarks_64[17:22]
+        boundaries['right_eyebrow'] = landmarks_64[22:27]
+        boundaries['uper_left_eyelid'] = landmarks_64[36:40]
+        boundaries['lower_left_eyelid'] = np.array([landmarks_64[i] for i in [36, 41, 40, 39]])
+        boundaries['upper_right_eyelid'] = landmarks_64[42:46]
+        boundaries['lower_right_eyelid'] = np.array([landmarks_64[i] for i in [42, 47, 46, 45]])
+        boundaries['noise'] = landmarks_64[27:31]
+        boundaries['noise_bot'] = landmarks_64[31:36]
+        boundaries['upper_outer_lip'] = landmarks_64[48:55]
+        boundaries['upper_inner_lip'] = np.array([landmarks_64[i] for i in [60, 61, 62, 63, 64]])
+        boundaries['lower_outer_lip'] = np.array([landmarks_64[i] for i in [48, 59, 58, 57, 56, 55, 54]])
+        boundaries['lower_inner_lip'] = np.array([landmarks_64[i] for i in [60, 67, 66, 65, 64]])
+        functions = {}
+        for key, points in boundaries.items():
+            temp = points[0]
+            new_points = points[0:1, :]
+            for point in points[1:]:
+                if point[0] == temp[0] and point[1] == temp[1]:
+                    continue
+                else:
+                    new_points = np.concatenate((new_points, np.expand_dims(point, 0)), axis=0)
+                    temp = point
+            points = new_points
+            if points.shape[0] == 1:
+                points = np.concatenate((points, points+0.001), axis=0)
+            k = min(4, points.shape[0])
+            functions[key] = interpolate.splprep([points[:, 0], points[:, 1]], k=k-1,s=0)
+
+        boundary_map = np.zeros((96, 96))
+
+        fig = plt.figure(figsize=[96/96.0, 96/96.0], dpi=96)
+
+        ax = fig.add_axes([0, 0, 1, 1])
+
+        ax.axis('off')
+
+        ax.imshow(boundary_map, interpolation='nearest', cmap='gray')
+        #ax.scatter(landmarks[:, 0], landmarks[:, 1], s=1, marker=',', c='w')
+
+        for key in functions.keys():
+            xnew = np.arange(0, 1, 0.01)
+            out = interpolate.splev(xnew, functions[key][0], der=0)
+            plt.plot(out[0], out[1], ',', linewidth=1, color='w')
+
+        plt.savefig("test.png")
+
+        img = fig2data(fig)
+        
+        plt.close()
+
+        sigma = 1
+        temp = 255-img[:,:,1]
+        temp = cv2.distanceTransform(temp, cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
+        temp = temp.astype(np.float32)
+        temp = np.where(temp < 3*sigma, np.exp(-(temp*temp)/(2*sigma*sigma)), 0 )
+
+        fig = plt.figure(figsize=[96/96.0, 96/96.0], dpi=96)
+
+        ax = fig.add_axes([0, 0, 1, 1])
+
+        ax.axis('off')
+        ax.imshow(temp, cmap='gray')
+        plt.close()
+
+        boundary_map = fig2data(fig)
+
+        sample['boundary'] = boundary_map[:, :, 0]
+
+        return sample
 
 class Heatmap_converter(object):
     def __init__(self, heatmap_size=96, window_size=7, sigma=1.75):
@@ -130,7 +231,8 @@ class Old_heatmap_converter(object):
 class FaceSynthetics(Dataset):
     def __init__(self, data_root:str, images:list, labels:np.ndarray, transform="train", 
                 aug_setting:dict=None, heatmap_size=96, return_gt=True, 
-                use_weight_map=False, fix_coord=False, data_weight=None) -> None:
+                use_weight_map=False, fix_coord=False, data_weight=None,
+                add_boundary=False) -> None:
         """
         Args:
             data_root: the path of the data
@@ -174,7 +276,12 @@ class FaceSynthetics(Dataset):
                 print("Success Loading cached data!")
         else:
             self.IN_COLAB = False
+        # Boundary
 
+        if add_boundary:
+            self.add_boundary = AddBoundary()
+        else:
+            self.add_boundary = None
         # data weight
         if not is_None(data_weight):
             num_normal_data = (data_weight == 2).sum()
@@ -242,20 +349,15 @@ class FaceSynthetics(Dataset):
         if self.return_gt:
             sample['gt_label'] = sample['label'].clone()
 
+        if self.add_boundary != None:
+            sample = self.add_boundary(sample)
+
         # transform point to heatmap
         sample['label'] = self.converter.convert(sample['label'])
-
 
         if self.use_weight_map:
             sample['weight_map'] = self._generate_weight_map(sample['label'])
         return sample
-        #     return im, label, gt_label, self._generate_weight_map(label)
-        # elif self.return_gt:
-        #     return im, label, gt_label
-        # elif self.use_weight_map:
-        #     return im, label, self._generate_weight_map(label)
-        # else:
-        #     return im, label
 
 class Predicting_FaceSynthetics(Dataset):
     def __init__(self, data_root:str, images:list) -> None:

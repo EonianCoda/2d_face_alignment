@@ -10,6 +10,8 @@ cfg = {
 
     ### Data Balance ###
     'balance_data': False,
+    ### Boundary ###
+    'add_boundary': False,
     ### Scheduler setting ###
     'scheduler_type': 1,  # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
     'warm_step': 500,   # If scheduler == 1, then use warm_epoch arg

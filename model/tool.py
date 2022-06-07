@@ -1,4 +1,5 @@
 from model.FAN import FAN
+from model.FAN_boundary import Boundary_FAN
 from model.blocks import HPM_ConvBlock, Bottleneck, InvertedResidual
 from model.blocks import CA_Block, SELayer
 
@@ -27,5 +28,11 @@ def get_model(cfg:dict):
     use_CoordConv = cfg['use_CoordConv']
     add_CoordConv_inHG = cfg['add_CoordConv_inHG']
     with_r = cfg['with_r']
-    return FAN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block,
-            use_CoordConv=use_CoordConv, add_CoordConv_inHG=add_CoordConv_inHG, with_r=with_r)
+
+    add_boundary = cfg['add_boundary']
+    if not add_boundary:
+        return FAN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block,
+                use_CoordConv=use_CoordConv, add_CoordConv_inHG=add_CoordConv_inHG, with_r=with_r)
+    else:
+        return Boundary_FAN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block,
+                            use_CoordConv=use_CoordConv, with_r=with_r)

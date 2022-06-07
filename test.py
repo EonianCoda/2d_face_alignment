@@ -1,5 +1,3 @@
-
-from pyexpat import model
 import torch
 from torch.utils.data import DataLoader
 from dataset.tool import get_pred_dataset
@@ -20,7 +18,7 @@ def shwo_img(img_path, label):
     plt.figure()
     plt.imshow(im)
 
-def pred_imgs(model, test_loader, device,fix_coord = False):
+def pred_imgs(model, test_loader, device,fix_coord = False, add_boundary = False):
     model = model.to(device)
     preds = []
 
@@ -44,7 +42,7 @@ def main():
     ### path ###
     data_path = f"./data/{args.type}"
     model_path = args.model_path
-
+    add_boundary = cfg['add_boundary']
     fix_coord = cfg['fix_coord']
     batch_size = cfg['batch_size'] * 2
     test_set = get_pred_dataset(data_path)
@@ -57,6 +55,7 @@ def main():
     preds = pred_imgs(model=model, 
                         test_loader=test_loader, 
                         device=device,
+                        add_boundary=add_boundary,
                         fix_coord=fix_coord)
     images = test_set.images
 

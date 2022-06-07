@@ -26,6 +26,7 @@ def main():
     annot_path = f"./data/{args.type}_annot.pkl"
     data_path = f"./data/{args.type}"
     model_path = args.model_path
+    add_boundary = cfg['add_boundary']
     ### image parameters ##
     show_line = args.show_line
     show_index = args.show_index
@@ -53,7 +54,10 @@ def main():
             sample = test_set.__getitem__(i)
             img, gt_label = sample['img'], sample['gt_label']
             img = img.to(device).unsqueeze(dim=0)
-            outputs = model(img)
+            if add_boundary:
+                outputs, _ = model(img)
+            else:
+                outputs = model(img)
             pred = heatmap_to_landmark(outputs, fix_coord=fix_coord)
           
             pred = pred[0]

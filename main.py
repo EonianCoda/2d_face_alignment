@@ -35,6 +35,7 @@ def main():
     split_ratio = cfg['split_ratio']
     balance_data = cfg['balance_data']
     aug_setting = cfg['aug_setting']
+    add_boundary = cfg['add_boundary']
     ### training hyperparameter ###
     epoch = cfg['epoch']
     seed = cfg['seed']
@@ -67,6 +68,7 @@ def main():
                                                use_weight_map=use_weight_map,
                                                fix_coord=fix_coord,
                                                get_weight=balance_data,
+                                               add_boundary=add_boundary,
                                                aug_setting=aug_setting)
     print("End of Loading annotation!!!")
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers= 2, pin_memory=True, drop_last=True)
@@ -136,6 +138,7 @@ def main():
     print(f"Use CoordConv = {cfg['use_CoordConv']}")
     print(f"With_r = {cfg['with_r']}")
     print(f"Add CoordConv inHG = {cfg['add_CoordConv_inHG']}")
+    print(f"Add add_boundary = {cfg['add_boundary']}")
     print("Aug setting = ", aug_setting)
     print(f"Balance_data = {balance_data}")
     
@@ -152,6 +155,7 @@ def main():
                 'warm_step': cfg['warm_step'],
                 'augmentation': aug,
                 'seed': cfg['seed'],
+                'add_boundary': cfg['add_boundary'],
                 # model architecture
                 'num_HG': cfg['num_HG'],
                 'HG_depth': cfg['HG_depth'],
@@ -177,6 +181,7 @@ def main():
         loss_type=loss_type,
         exp_name=exp_name,
         fix_coord=fix_coord,
+        add_boundary=add_boundary,
         train_hyp=train_hyp,
         resume_epoch=resume_epoch)
 

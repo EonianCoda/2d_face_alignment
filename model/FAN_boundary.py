@@ -68,13 +68,13 @@ class HourGlassNet(nn.Module):
         x, last_channel = self.coordconv(x, heatmap)
         return self._forward(x, 1), last_channel
 
-class FAN(nn.Module):
+class Boundary_FAN(nn.Module):
     """Facial Alignment network
     """
     def __init__(self, num_HG:int = 4, HG_depth:int = 4, num_feats:int = 256, 
                 num_classes:int = 68, resBlock=HPM_ConvBlock, attention_block=None,
                  use_CoordConv=False, with_r=False, end_relu=False):
-        super(FAN, self).__init__()
+        super(Boundary_FAN, self).__init__()
         self.num_HG = num_HG # num of how many hourglass stack
         self.HG_dpeth = HG_depth # num of recursion in hourglass net
         self.num_feats = num_feats
@@ -99,7 +99,11 @@ class FAN(nn.Module):
 
         # Stacked hourglassNet part
         for stack_idx in range(1, self.num_HG + 1):
-            self.add_module(f"HG{stack_idx}", HourGlassNet(self.HG_dpeth, self.num_feats, resBlock=resBlock, attention_block=attention_block, with_r=with_r))
+            if stack_idx == 1:
+                first_one = True
+            else:
+                first_one == False
+            self.add_module(f"HG{stack_idx}", HourGlassNet(self.HG_dpeth, self.num_feats, resBlock=resBlock, attention_block=attention_block, with_r=with_r, first_one=first_one))
             self.add_module(f"stack{stack_idx}_conv1", resBlock(self.num_feats, self.num_feats))
             self.add_module(f"stack{stack_idx}_conv2", conv1x1(self.num_feats, self.num_feats, bias=True))
             self.add_module(f"stack{stack_idx}_bn1", nn.BatchNorm2d(int(self.num_feats)))

@@ -16,7 +16,8 @@ def main():
     parser.add_argument('--type', type=str, default="val")
     args = parser.parse_args()
 
-    
+    ### Boundary model
+    add_boundary = cfg['add_boundary']
     ### path ###
     annot_path = f"./data/{args.type}_annot.pkl"
     data_path = f"./data/{args.type}"
@@ -29,11 +30,12 @@ def main():
     test_loader = DataLoader(test_set, batch_size=batch_size, num_workers= 2, pin_memory=True)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    
     # Create model
     model = get_model(cfg)
 
     load_parameters(model, model_path)
-    test_NME_loss, test_NME_loss_68 = val(model, test_loader, device, fix_coord=fix_coord)
+    test_NME_loss, test_NME_loss_68 = val(model, test_loader, device, fix_coord=fix_coord, add_boundary = add_boundary)
     print(f"Average NME Loss : {test_NME_loss:.6f}")
     plot_loss_68(test_NME_loss_68)
     print(np.argsort(test_NME_loss_68))
