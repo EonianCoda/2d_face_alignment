@@ -152,6 +152,28 @@ class FaceSynthetics(Dataset):
         self.labels= torch.tensor(labels)
         self.num_classes = len(self.labels[0])
 
+        try:
+            import google.colab
+            self.IN_COLAB = True
+        except:
+            self.IN_COLAB = False
+        img_path = "./data/train_imgs.pkl"
+        img_data = "./data/train_data.pkl"
+        if self.IN_COLAB and os.path.isfile(img_path) and os.path.isfile(img_data)
+            import pickle
+            old_images = pickle.load(open(img_path,'rb'))
+            # Test if same
+            for a,b in zip(self.images, old_images):
+                if a != b:
+                    self.IN_COLAB = False
+                    break
+            del old_images
+            if self.IN_COLAB:
+                self.img_data = pickle.load(open(img_data,'rb'))
+                print("Success Loading cached data!")
+        else:
+            self.IN_COLAB = False
+
         # data weight
         if not is_None(data_weight):
             num_normal_data = (data_weight == 2).sum()
@@ -204,10 +226,13 @@ class FaceSynthetics(Dataset):
             weight_map[i][dilate>0.2] = 1
         return weight_map
     def __getitem__(self, idx:int):
-        idx = self.index_mapping(idx)
-        # Read imagee
-        img_path = os.path.join(self.data_root, self.images[idx])
-        im = Image.open(img_path)
+        if not self.IN_COLAB:
+            idx = self.index_mapping(idx)
+            # Read imagee
+            img_path = os.path.join(self.data_root, self.images[idx])
+            im = Image.open(img_path)
+        else:
+            im = self.img_data[idx]
         im, label = self.transform(im, self.labels[idx])
         if self.return_gt:
             gt_label = label.clone()
@@ -236,8 +261,8 @@ class Predicting_FaceSynthetics(Dataset):
         # transform
         means = [0.485, 0.456, 0.406]
         stds = [0.229, 0.224, 0.225]
-        self.transform =  transforms.Compose([transforms.ToTensor(),
-                                                transforms.Normalize(means, stds)])
+        self.transform =  transforms.Compose([transforms.ToTensor()])
+                                                #transforms.Normalize(means, stds)])
         # data
         self.images = images
 
