@@ -1,11 +1,12 @@
 import torch
 import os
 import argparse
+from dataset.FaceSynthetics import Heatmap_converter
 from utils.evaluation import *
 from model.tool import get_model
 from dataset.tool import get_test_dataset
 from utils.tool import load_parameters
-from utils.visualize import read_img, plot_keypoints
+from utils.visualize import read_img, plot_keypoints, Heatmap_visualizer
 import matplotlib.pyplot as plt
 import random
 from cfg import *
@@ -19,9 +20,10 @@ def main():
     parser.add_argument('--show_index', action="store_false")
     parser.add_argument('--show_line', action="store_false")
     parser.add_argument('--show_bad', action="store_true")
+    parser.add_argument('--bad_loss', type=float, default=1.85)
     args = parser.parse_args()
 
-    BAD_LOSS = 0.015
+    
     ### Data parameters ##
     annot_path = f"./data/{args.type}_annot.pkl"
     data_path = f"./data/{args.type}"
@@ -31,6 +33,7 @@ def main():
     show_line = args.show_line
     show_index = args.show_index
     show_bad = args.show_bad
+    bad_loss = args.bad_loss
     ### model setting ###
 
     fix_coord = cfg['fix_coord']
@@ -41,8 +44,11 @@ def main():
 
     load_parameters(model, model_path)
 
+    heatmap_visualizer = Heatmap_visualizer()
+    heatmap_converter = Heatmap_converter(96)
     model = model.to(device)
     model.eval()
+
     with torch.no_grad():
         idxs = [i for i in range(len(test_set))]
         random.shuffle(idxs)
@@ -51,6 +57,7 @@ def main():
         num_cur_show = 0
         for i in idxs:
             img_path = test_set.images[i]
+            
             sample = test_set.__getitem__(i)
             img, gt_label = sample['img'], sample['gt_label']
             img = img.to(device).unsqueeze(dim=0)
@@ -62,13 +69,20 @@ def main():
           
             pred = pred[0]
             NME_loss = NME(pred, gt_label)
-            if (show_bad and NME_loss >= BAD_LOSS) or not show_bad:
+            if (show_bad and NME_loss >= bad_loss) or not show_bad:
                 # Draw keypoints on the image
-                im = read_img(os.path.join(data_path, img_path))
-                im = plot_keypoints(im, gt_label, pred, show_index, show_line)
-                plt.figure()
-                plt.title(f"Loss = {NME_loss:4f}")
-                plt.imshow(im)
+                origin_im = read_img(os.path.join(data_path, img_path))
+                # Points
+                fig, axs = plt.subplots(1,3,figsize=(18,6))
+                im = plot_keypoints(origin_im.copy(), gt_label, pred, show_index, show_line)
+                axs[0].imshow(im)
+                axs[0].set_title(f"Loss = {NME_loss:4f}")
+                # Predicting Heatmap
+                heatmap_visualizer.draw_heatmap(origin_im.copy(), outputs[-1], color="red", ax=axs[1])
+                axs[1].set_title("Pred Heatmap")
+                # Groud Truth heatmap
+                heatmap_visualizer.draw_heatmap(origin_im.copy(), heatmap_converter.convert(gt_label), color="red", ax=axs[2])
+                axs[2].set_title("Ground Truth Heatmap")
                 num_cur_show += 1
                 if num_cur_show == args.plot_img:
                     break

@@ -81,8 +81,10 @@ class Heatmap_visualizer(object):
         cmp._lut[:,-1] = np.linspace(0, 1.0, 255+4)
         return cmp
 
-    def draw_heatmap(self, im, heatmap:torch.Tensor, color="red"):
+    def draw_heatmap(self, im, heatmap:torch.Tensor, color="red", ax=None):
         # Processing heatmap
+        if heatmap.is_cuda:
+            heatmap = heatmap.detach().cpu()
         if heatmap.dim() == 3:
             heatmap = heatmap.unsqueeze(dim=0)
         elif heatmap.dim() == 2:
@@ -92,8 +94,10 @@ class Heatmap_visualizer(object):
         heatmap = torch.clamp(heatmap, max=1.0)
 
         im = to_numpy(im)
-        fig = plt.figure()
-        ax = plt.gca()
+        if ax == None:
+            plt.figure()
+            ax = plt.gca()
+
         #ax.axis('off')
         ax.imshow(im)
         w, h, c = im.shape
