@@ -32,9 +32,13 @@ def plot_keypoints(im, gt=None, pred=None, show_index:bool=True, show_line:bool=
         raise ValueError("Groud truth label and predicting lable are None!")
 
     if not is_None(gt) and isinstance(gt, torch.Tensor):
+        if gt.dim() == 3:
+            gt = gt.squeeze(dim=0)
         gt = gt.long().tolist()
 
     if not is_None(pred) and isinstance(pred, torch.Tensor):
+        if pred.dim() == 3:
+            pred = pred.squeeze(dim=0)
         pred = pred.long().tolist()
     
     # draw points

@@ -52,7 +52,7 @@ def main():
     with torch.no_grad():
         idxs = [i for i in range(len(test_set))]
         random.shuffle(idxs)
-        idxs = idxs[: args.plot_img]
+        #idxs = idxs[: args.plot_img]
 
         num_cur_show = 0
         for i in idxs:
@@ -76,7 +76,7 @@ def main():
                 fig, axs = plt.subplots(1,3,figsize=(18,6))
                 im = plot_keypoints(origin_im.copy(), gt_label, pred, show_index, show_line)
                 axs[0].imshow(im)
-                axs[0].set_title(f"Loss = {NME_loss:4f}")
+                axs[0].set_title(f"Loss = {NME_loss:4f}" + img_path)
                 # Predicting Heatmap
                 heatmap_visualizer.draw_heatmap(origin_im.copy(), outputs[-1], color="red", ax=axs[1])
                 axs[1].set_title("Pred Heatmap")

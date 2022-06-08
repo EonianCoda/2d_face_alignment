@@ -9,16 +9,16 @@ class Warmup_ReduceLROnPlateau(_LRScheduler):
         self.verbose = verbose
         
         self.last_step = 0
-        #self.ratio = self.warm_up_step / 20
+        self.ratio = self.warm_up_step / 20
         #self.flag = False
         super(Warmup_ReduceLROnPlateau, self).__init__(optimizer)
     def get_lr(self) -> float:
         if self.last_step <= self.warm_up_step:
             # ExponentialWarmup
-            ratio = 1.0 - math.exp(-(self.last_step + 1) / self.warm_up_step)
-            # cur_ratio = math.ceil(self.last_step / self.ratio) / (self.warm_up_step / self.ratio)
-            # cur_ratio = max(cur_ratio, 0.5 / (self.warm_up_step / self.ratio))
-            return [base_lr * ratio for base_lr in self.base_lrs]
+#            ratio = 1.0 - math.exp(-(self.last_step + 1) / self.warm_up_step)
+            cur_ratio = math.ceil(self.last_step / self.ratio) / (self.warm_up_step / self.ratio)
+            cur_ratio = max(cur_ratio, 0.5 / (self.warm_up_step / self.ratio))
+            return [base_lr * cur_ratio for base_lr in self.base_lrs]
         else:
 
             return self.after_scheduler.get_last_lr()

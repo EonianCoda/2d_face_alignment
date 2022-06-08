@@ -112,6 +112,15 @@ class FAN(nn.Module):
             elif isinstance(m, nn.Linear):
                 m.weight.data.normal_(0, 0.01)
                 m.bias.data.zero_()
+        # Zero Gamma
+        # count = 0
+        # for m in self.modules():
+        #     if isinstance(m, HPM_ConvBlock):
+        #         for name, x in m.named_modules():
+        #             if name == "bn3":
+        #                 count += 1
+        #                 x.weight.data.zero_()
+        # print("count = ", count)
     def forward(self, x):
         outputs = []
         # Base part

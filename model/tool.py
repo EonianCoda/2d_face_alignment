@@ -32,12 +32,12 @@ def get_model(cfg:dict):
 
     add_boundary = cfg['add_boundary']
     SD = cfg['SD']
-    if not add_boundary:
-        return FAN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block,
-                use_CoordConv=use_CoordConv, add_CoordConv_inHG=add_CoordConv_inHG, with_r=with_r)
-    elif SD:
+    if SD:
         return FAN_SD(num_HG, HG_depth, num_feats, attention_block=attention_block,use_CoordConv=use_CoordConv,
                      add_CoordConv_inHG=add_CoordConv_inHG, with_r=with_r)
-    else:
+    elif add_boundary:
         return Boundary_FAN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block,
-                            with_r=with_r)
+                    with_r=with_r)
+    else:
+        return FAN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block,
+                use_CoordConv=use_CoordConv, add_CoordConv_inHG=add_CoordConv_inHG, with_r=with_r)

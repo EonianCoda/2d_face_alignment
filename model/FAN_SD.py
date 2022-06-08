@@ -119,7 +119,7 @@ class FAN_SD(nn.Module):
             elif isinstance(m, nn.Linear):
                 m.weight.data.normal_(0, 0.01)
                 m.bias.data.zero_()
-    def set_drop(self, status:bool):
+    def start_drop(self, status:bool):
         for m in self.modules():
             if isinstance(m, HPM_ConvBlock_SD):
                 m.start_drop = status
