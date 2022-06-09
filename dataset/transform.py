@@ -5,6 +5,34 @@ import torchvision.transforms.functional as F
 import random
 import math
 
+class RandomErasing(object):
+    def __init__(self, prob = 0.5):
+        self.prob = prob
+        self.earser = transforms.RandomErasing(p=1.0, scale=(0.02,0.25))
+        
+    def __call__(self, sample):
+        if random.random() > self.prob:
+            return sample
+
+        c, h, w = sample['img'].shape
+        max_coord, _ = sample['label'].max(dim=0)
+        min_coord, _ = sample['label'].min(dim=0)
+        # X coord
+        max_x = int(max_coord[1])
+        min_x = int(min_coord[1])
+        max_x = min(int(max_x * 1.05), w)
+        min_x = max(int(min_x * 0.95), 0)
+        # Y coord
+        max_y = int(max_coord[1])
+        min_y = int(min_coord[1])
+        max_y = min(int(max_y * 1.05), h)
+        min_y = max(int(min_y * 0.95), 0)
+
+        sample['img'][...,min_y : max_y, min_x: max_x] = self.earser(sample['img'][...,min_y : max_y, min_x: max_x])
+       
+        return sample
+
+
 class RandomPadding(object):
     def __init__(self, prob=0.5, padding:int=80):
         self.prob = prob
@@ -145,7 +173,7 @@ class Transform(object):
             self.color_jitter = transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3)
             self.gray_transform = transforms.Grayscale(num_output_channels=3)
             self.random_padding = RandomPadding()
-
+            self.random_earsing = RandomErasing()
     def __call__(self, sample:dict):
         sample['label'] = sample['label'].clone()
         # Random Padding
@@ -181,7 +209,8 @@ class Transform(object):
             if random.random() > 2/3:
                 sample['img'] = self.gray_transform(sample['img'])
 
-        #img = self.normalize(img)
+        if self.is_train and self.aug_setting['earsing']:
+            sample = self.random_earsing(sample)
         return sample
 
 

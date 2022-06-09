@@ -40,6 +40,7 @@ cfg = {
                 'gaussianBlur': False,
                 'colorJitter': False,
                 'padding': False,
+                'earsing': False,
                 'grayscale': False},                    
     ### Optimizer Type ###  
     'optimizer_idx': 0,
