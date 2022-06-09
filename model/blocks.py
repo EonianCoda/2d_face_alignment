@@ -250,42 +250,62 @@ class HPM_ConvBlock_SD(nn.Module):
         else:
             return self._forward(x)
         
-
 class AddCoords(nn.Module):
 
     def __init__(self, with_r=False):
         super().__init__()
         self.with_r = with_r
 
+        self.xx_channel = None
+        self.yy_channel = None
+        self.r_channel = None
+        self.speed_up = True
+
+    def get_xxyy(self, input_tensor):
+        batch_size, _, x_dim, y_dim = input_tensor.size()
+        def gen_xx_yy():
+            xx_channel = torch.arange(x_dim).repeat(1, y_dim, 1)
+            yy_channel = torch.arange(y_dim).repeat(1, x_dim, 1).transpose(1, 2)
+
+            xx_channel = xx_channel / (x_dim - 1)
+            yy_channel = yy_channel / (y_dim - 1)
+
+            xx_channel = xx_channel * 2 - 1
+            yy_channel = yy_channel * 2 - 1
+
+            xx_channel = xx_channel.repeat(batch_size, 1, 1, 1).transpose(2, 3)
+            yy_channel = yy_channel.repeat(batch_size, 1, 1, 1).transpose(2, 3)
+            
+            return xx_channel, yy_channel
+
+        if self.speed_up:
+            if self.xx_channel == None:
+                self.xx_channel, self.yy_channel = gen_xx_yy()
+                if input_tensor.is_cuda:
+                    self.xx_channel = self.xx_channel.cuda()
+                    self.yy_channel = self.yy_channel.cuda()
+            return self.xx_channel[:batch_size].clone(), self.yy_channel[:batch_size].clone()
+        else:
+            xx_channel, yy_channel = gen_xx_yy()
+            if input_tensor.is_cuda:
+                xx_channel = xx_channel.cuda()
+                yy_channel = yy_channel.cuda() 
+            return xx_channel, yy_channel
+            
     def forward(self, input_tensor):
         """
         Args:
             input_tensor: shape(batch, channel, x_dim, y_dim)
         """
-        batch_size, _, x_dim, y_dim = input_tensor.size()
-
-        xx_channel = torch.arange(x_dim).repeat(1, y_dim, 1)
-        yy_channel = torch.arange(y_dim).repeat(1, x_dim, 1).transpose(1, 2)
-
-        xx_channel = xx_channel / (x_dim - 1)
-        yy_channel = yy_channel / (y_dim - 1)
-
-        xx_channel = xx_channel * 2 - 1
-        yy_channel = yy_channel * 2 - 1
-
-        xx_channel = xx_channel.repeat(batch_size, 1, 1, 1).transpose(2, 3)
-        yy_channel = yy_channel.repeat(batch_size, 1, 1, 1).transpose(2, 3)
-
-        if input_tensor.is_cuda:
-            xx_channel = xx_channel.cuda()
-            yy_channel = yy_channel.cuda()
-
+        
+        xx_channel, yy_channel = self.get_xxyy(input_tensor)
         ret = torch.cat([
-            input_tensor,
-            xx_channel.type_as(input_tensor),
-            yy_channel.type_as(input_tensor)], dim=1)
+                    input_tensor,
+                    xx_channel.type_as(input_tensor),
+                    yy_channel.type_as(input_tensor)], dim=1)
 
         if self.with_r:
+            rr = self.get_r(input_tensor.size())
             rr = torch.sqrt(torch.pow(xx_channel - 0.5, 2) + torch.pow(yy_channel - 0.5, 2))
             if input_tensor.is_cuda:
                 rr = rr.cuda()

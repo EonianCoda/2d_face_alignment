@@ -9,7 +9,7 @@ cfg = {
                 5:"weighted_L2"},
 
     ### Data Balance ###
-    'balance_data': False,
+    'balance_data': True,
 
     ### Scheduler setting ###
     'scheduler_type': 1,  # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
@@ -22,20 +22,20 @@ cfg = {
     'num_HG': 2,
     'HG_depth':4,
     'num_feats':128,
-    'fix_coord': False,
+    'fix_coord': True,
     'add_boundary': False,
-    'use_CoordConv': False,  # if addBoundary == True, then this arg is useless.
+    'use_CoordConv': True,  # if addBoundary == True, then this arg is useless.
     'with_r': False,
     'add_CoordConv_inHG': False,  # if addBoundary == True, then this arg is useless.
     ### Attention Block ###
-    'attention_block_idx': 0,
+    'attention_block_idx': 2,
     'attention_blocks': {0: "None",
                         1: "SELayer",
                         2: "CA_Block"},
 
     ### Augumentation Setting ###
     'aug_setting':{'flip': False,
-                'rotation': False,
+                'rotation': True,
                 'noise': False,
                 'gaussianBlur': False,
                 'colorJitter': False,
