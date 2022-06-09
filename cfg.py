@@ -24,9 +24,12 @@ cfg = {
     'num_feats':128,
     'fix_coord': True,
     'add_boundary': False,
-    'use_CoordConv': True,  # if addBoundary == True, then this arg is useless.
+    'use_CoordConv': False,  # if addBoundary == True, then this arg is useless.
     'with_r': False,
     'add_CoordConv_inHG': False,  # if addBoundary == True, then this arg is useless.
+    'GN':True,
+    'use_ws':True,
+    'use_gn':True,
     ### Attention Block ###
     'attention_block_idx': 2,
     'attention_blocks': {0: "None",

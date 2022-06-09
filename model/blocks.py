@@ -191,6 +191,50 @@ class HPM_ConvBlock(nn.Module):
 
         return out3
 
+class HPM_ConvBlock_gn(nn.Module):
+    """Hierarchical, parallel and multi-scale block
+    """
+    def __init__(self, inplanes:int, planes:int):
+        super(HPM_ConvBlock, self).__init__()
+        self.bn1 = nn.GroupNorm(32,inplanes)
+        self.conv1 = conv3x3(inplanes, planes // 2)
+        self.bn2 = nn.GroupNorm(32,inplanes)
+        self.conv2 = conv3x3(planes // 2, planes // 4)
+        self.bn3 = nn.GroupNorm(32,inplanes)
+        self.conv3 = conv3x3(planes // 4, planes // 4)
+
+        self.relu = nn.ReLU(inplace=True)
+        if inplanes != planes:
+            self.shortcut = nn.Sequential(
+                nn.GroupNorm(32,inplanes),
+                nn.ReLU(inplace=True),
+                conv1x1(inplanes, planes)
+            )
+        else:
+            self.shortcut = None
+
+    def forward(self, x):
+        residual = x
+
+        out1 = self.bn1(x)
+        out1 = self.relu(out1)
+        out1 = self.conv1(out1)
+
+        out2 = self.bn2(out1)
+        out2 = self.relu(out2)
+        out2 = self.conv2(out2)
+
+        out3 = self.bn3(out2)
+        out3 = self.relu(out3)
+        out3 = self.conv3(out3)
+
+        out3 = torch.cat([out1, out2, out3], axis=1)
+        if self.shortcut != None:
+            residual =  self.shortcut(residual)
+        out3 += residual
+
+        return out3
+
 class HPM_ConvBlock_SD(nn.Module):
     """Hierarchical, parallel and multi-scale block
     """
@@ -326,7 +370,6 @@ class CoordConv(nn.Module):
         ret = self.addcoords(x)
         ret = self.conv(ret)
         return ret
-
 
 class AddCoordsTh(nn.Module):
     def __init__(self, x_dim=96, y_dim=96, with_r=False, with_boundary=False):

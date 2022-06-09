@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from model.blocks import conv1x1, conv3x3
-from model.blocks import HPM_ConvBlock, SELayer, CA_Block
+from model.blocks import HPM_ConvBlock_gn, SELayer, CA_Block
 from model.blocks import CoordConv
 import math
 class HourGlassNet(nn.Module):
-    def __init__(self, depth:int, num_feats:int, resBlock=HPM_ConvBlock, attention_block=None, add_CoordConv=False, with_r=False):
+    def __init__(self, depth:int, num_feats:int, resBlock=HPM_ConvBlock_gn, attention_block=None, add_CoordConv=False, with_r=False):
         super(HourGlassNet, self).__init__()
         self.depth = depth
         self.num_feats = num_feats
@@ -61,12 +61,29 @@ class HourGlassNet(nn.Module):
 
         return self._forward(x, 1)
 
-class FAN(nn.Module):
+class Conv2d_haha(nn.Conv2d):
+
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1,
+                 padding=0, dilation=1, groups=1, bias=True):
+        super(Conv2d_haha, self).__init__(in_channels, out_channels, kernel_size, stride,
+                 padding, dilation, groups, bias)
+
+    def forward(self, x):
+        weight = self.weight
+        weight_mean = weight.mean(dim=1, keepdim=True).mean(dim=2,
+                                  keepdim=True).mean(dim=3, keepdim=True)
+        weight = weight - weight_mean
+        std = weight.view(weight.size(0), -1).std(dim=1).view(-1, 1, 1, 1) + 1e-5
+        weight = weight / std.expand_as(weight)
+        return F.conv2d(x, weight, self.bias, self.stride,
+                        self.padding, self.dilation, self.groups)
+
+class FAN_WS(nn.Module):
     """Facial Alignment network
     """
     def __init__(self, num_HG:int = 4, HG_depth:int = 4, num_feats:int = 256, 
-                num_classes:int = 68, resBlock=HPM_ConvBlock, attention_block=None,use_CoordConv=False, with_r=False, add_CoordConv_inHG=False):
-        super(FAN, self).__init__()
+                num_classes:int = 68, resBlock=HPM_ConvBlock_gn, attention_block=None,use_CoordConv=False,use_ws=True,use_gn=True, with_r=False, add_CoordConv_inHG=False):
+        super(FAN_WS, self).__init__()
         self.num_HG = num_HG # num of how many hourglass stack
         self.HG_dpeth = HG_depth # num of recursion in hourglass net
         self.num_feats = num_feats
@@ -77,9 +94,14 @@ class FAN(nn.Module):
         self.max_pool2d = nn.MaxPool2d(kernel_size=2, stride=2)
         if use_CoordConv:
             self.conv1 = CoordConv(3, self.num_feats // 4, with_r=with_r, kernel_size=7, stride=2, padding=3)
+        elif use_ws: 
+            self.conv1 = Conv2d_haha(3, self.num_feats // 4,  kernel_size=7, stride=2, padding=3)
         else:
             self.conv1 = nn.Conv2d(3, self.num_feats // 4, kernel_size=7, stride=2, padding=3)
-        self.bn1 = nn.BatchNorm2d(self.num_feats // 4)
+        if use_gn:
+            self.bn1 = nn.GroupNorm(32,self.num_feats // 4)
+        else:
+            self.bn1 = nn.BatchNorm2d(self.num_feats // 4)
         self.conv2 = resBlock(self.num_feats // 4, self.num_feats // 2)
         self.conv3 = resBlock(self.num_feats // 2, self.num_feats // 2)
         self.conv4 = resBlock(self.num_feats // 2, self.num_feats)
@@ -89,7 +111,11 @@ class FAN(nn.Module):
             self.add_module(f"HG{stack_idx}", HourGlassNet(self.HG_dpeth, self.num_feats, resBlock=resBlock, attention_block=attention_block, add_CoordConv=add_CoordConv_inHG, with_r=with_r))
             self.add_module(f"stack{stack_idx}_conv1", resBlock(self.num_feats, self.num_feats))
             self.add_module(f"stack{stack_idx}_conv2", conv1x1(self.num_feats, self.num_feats, bias=True))
-            self.add_module(f"stack{stack_idx}_bn1", nn.BatchNorm2d(int(self.num_feats)))
+            if use_gn:
+                self.add_module(f"stack{stack_idx}_bn1", nn.GroupNorm(32,int(self.num_feats)))
+            else:
+                self.add_module(f"stack{stack_idx}_bn1", nn.BatchNorm2d(int(self.num_feats)))
+            
 
             self.add_module(f"stack{stack_idx}_conv_out", conv1x1(self.num_feats, self.num_classes, bias=True))
             if stack_idx != self.num_HG:
@@ -99,8 +125,7 @@ class FAN(nn.Module):
     def _weight_init(self):
         for m in self.modules():
             # if isinstance(m, nn.Conv2d):
-            #     nn.init.kaiming_normal_(m.weight, mode='fan_out', nonl
-            # inearity='relu')
+            #     nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
             if isinstance(m, nn.Conv2d):
                 #print(m.weight.size())
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
@@ -109,6 +134,9 @@ class FAN(nn.Module):
                     m.bias.data.zero_()
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
+                m.bias.data.zero_()
+            elif isinstance(m,nn.GroupNorm):
+                m.weight.data.fill_(1.)
                 m.bias.data.zero_()
             elif isinstance(m, nn.Linear):
                 m.weight.data.normal_(0, 0.01)

@@ -193,6 +193,8 @@ def main():
                 'HG_depth': cfg['HG_depth'],
                 'num_feats': cfg['num_feats'],
                 'use_CoordConv':cfg['use_CoordConv'],
+                'use_ws':cfg['use_ws'],
+                'use_gn':cfg['use_gn'],
                 'with_r': cfg['with_r'],
                 'add_CoordConv_inHG':cfg['add_CoordConv_inHG'],
                 'attention_block' : cfg['attention_blocks'][cfg['attention_block_idx']],
