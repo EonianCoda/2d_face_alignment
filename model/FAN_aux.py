@@ -205,7 +205,8 @@ class FAN_aux(nn.Module):
             if stack_idx != self.num_HG:
                 residual = x
             x = self._modules[f"HG{stack_idx}"](x)
-            outputs_angle.append(self.aux_net(x))
+            if self.training:
+                outputs_angle.append(self.aux_net(x))
             
             x = self._modules[f"stack{stack_idx}_conv1"](x)
             x = self._modules[f"stack{stack_idx}_conv2"](x)
@@ -218,6 +219,9 @@ class FAN_aux(nn.Module):
                 x = self._modules[f"stack{stack_idx}_conv3"](x)
                 out_ = self._modules[f"stack{stack_idx}_shortcut"](out)
                 x = out_ + residual + x
-        return outputs, outputs_angle
+        if self.training:
+            return outputs, outputs_angle
+        else:
+            return outputs
 
 
