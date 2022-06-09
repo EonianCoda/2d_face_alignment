@@ -37,7 +37,7 @@ def load_parameters(model, path, optimizer=None, scheduler=None):
 
     print("End of loading !!!")
 
-def val(model, test_loader, device, fix_coord=False, add_boundary=False):
+def val(model, test_loader, device, fix_coord=False, add_boundary=False, aux_net=False):
     print("Starting Validation....")
     
     model = model.to(device)
@@ -52,8 +52,8 @@ def val(model, test_loader, device, fix_coord=False, add_boundary=False):
             img, gt_label = sample['img'], sample['gt_label']
             img = img.to(device)
 
-            if add_boundary:
-                outputs, pred_boundary = model(img)
+            if add_boundary or aux_net:
+                outputs, _ = model(img)
             else:
                 outputs = model(img)
 
@@ -101,8 +101,20 @@ def process_boundary(loss_type:str, criterion, outputs:torch.Tensor, boundary:to
 
     return loss
 
+def process_angle_and_loss(preds:torch.Tensor, labels:torch.Tensor, pred_angles, gt_angles):
+
+    loss = 0
+    weight = torch.sum(1 - torch.cos(gt_angles), axis=1)
+    num_target = (labels != 0).sum()
+    # Angle loss
+    for pred, pred_angle in zip(preds, pred_angles):
+        loss += nn.SmoothL1Loss()(pred_angle, gt_angles)
+        loss += (((pred - labels) ** 2).sum(dim=(-1,-2,-3)) * weight).sum() / num_target
+    return loss
+
 def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, 
-        loss_type:str, exp_name="", train_hyp=dict(), resume_epoch=-1,fix_coord=False, SD=False, SD_start_epoch=0,add_boundary=False):
+        loss_type:str, exp_name="", train_hyp=dict(), resume_epoch=-1,fix_coord=False, SD=False, SD_start_epoch=0,
+        add_boundary=False, aux_net=False):
     start_train = time.time()
     # Create writerr for recording loss
     if exp_name == "":
@@ -161,19 +173,27 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
             # Add boundary
             if add_boundary:
                 boundary = sample['boundary'].to(device)
+            # Aux Net
+            if aux_net:
+                angles = sample['euler_angle'].to(device)
 
             # Forward part
             img = img.to(device)
             label = label.to(device)
             if add_boundary:
                 outputs, pred_boundary = model(img)
+            elif aux_net:
+                outputs, pred_angles = model(img)
             else:
                 outputs = model(img)
             # Calculate Loss
-            loss = process_loss(loss_type, criterion, outputs, label, weight_map)
-            if add_boundary:
-                boundary_loss = process_boundary(loss_type, criterion, pred_boundary, boundary, weight_map)
-                loss += boundary_loss
+            if not aux_net:
+                loss = process_loss(loss_type, criterion, outputs, label, weight_map)
+                if add_boundary:
+                    boundary_loss = process_boundary(loss_type, criterion, pred_boundary, boundary, weight_map)
+                    loss += boundary_loss
+            else:
+                loss = process_angle_and_loss(outputs, label, pred_angles, angles)
             # Backward and update
             train_loss += loss.item()
             optimizer.zero_grad()
@@ -205,18 +225,32 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                 # Add boundary
                 if add_boundary:
                     boundary = sample['boundary'].to(device)
+                # Aux Net
+                if aux_net:
+                    angles = sample['euler_angle'].to(device)
                 # Forward part
                 img = img.to(device)
                 label = label.to(device)
                 if add_boundary:
                     outputs, pred_boundary = model(img)
+                elif aux_net:
+                    outputs, pred_angles = model(img)
                 else:
                     outputs = model(img)
                 # intermediate supervision
-                loss = process_loss(loss_type, criterion, outputs, label, weight_map)
-                if add_boundary:
-                    boundary_loss = process_boundary(loss_type, criterion, pred_boundary, boundary, weight_map)
-                    loss += boundary_loss
+                if not aux_net:
+                    loss = process_loss(loss_type, criterion, outputs, label, weight_map)
+                    if add_boundary:
+                        boundary_loss = process_boundary(loss_type, criterion, pred_boundary, boundary, weight_map)
+                        loss += boundary_loss
+                else:
+                    loss = process_angle_and_loss(outputs, label, pred_angles, angles)
+
+                
+                # loss = process_loss(loss_type, criterion, outputs, label, weight_map)
+                # if add_boundary:
+                #     boundary_loss = process_boundary(loss_type, criterion, pred_boundary, boundary, weight_map)
+                #     loss += boundary_loss
                 val_loss += loss.item()
                 # Calculate loss with groud truth label
                 pred_label = heatmap_to_landmark(outputs, fix_coord=fix_coord)
@@ -233,7 +267,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                             scalar_value=float(val_loss), 
                             global_step=epoch)
         # Testing part
-        test_NME_loss, test_NME_loss_68 = val(model, test_loader, device, fix_coord=fix_coord, add_boundary=add_boundary)
+        test_NME_loss, test_NME_loss_68 = val(model, test_loader, device, fix_coord=fix_coord, add_boundary=add_boundary, aux_net=aux_net)
         writer.add_scalar(tag="val/test_NME_loss",
                                 scalar_value=float(test_NME_loss), 
                                 global_step=epoch)

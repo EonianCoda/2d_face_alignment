@@ -10,7 +10,110 @@ from scipy.spatial import procrustes
 from dataset.FaceSynthetics import FaceSynthetics
 from dataset.FaceSynthetics import Predicting_FaceSynthetics
 
+import numpy as np
+import cv2
 
+def calculate_pitch_yaw_roll(landmarks_2D, cam_w=384, cam_h=384, radians=True):
+    """ Return the the pitch  yaw and roll angles associated with the input image.
+    @param radians When True it returns the angle in radians, otherwise in degrees.
+    """
+    c_x = cam_w/2
+    c_y = cam_h/2
+    f_x = c_x / np.tan(60/2 * np.pi / 180)
+    f_y = f_x
+
+    #Estimated camera matrix values.
+    camera_matrix = np.float32([[f_x, 0.0, c_x],
+                                [0.0, f_y, c_y],
+                                [0.0, 0.0, 1.0]])
+
+    camera_distortion = np.float32([0.0, 0.0, 0.0, 0.0, 0.0])
+
+    LEFT_EYEBROW_LEFT  = [6.825897, 6.760612, 4.402142]
+    LEFT_EYEBROW_RIGHT = [1.330353, 7.122144, 6.903745]
+    RIGHT_EYEBROW_LEFT = [-1.330353, 7.122144, 6.903745]
+    RIGHT_EYEBROW_RIGHT= [-6.825897, 6.760612, 4.402142]
+    LEFT_EYE_LEFT  = [5.311432, 5.485328, 3.987654]
+    LEFT_EYE_RIGHT = [1.789930, 5.393625, 4.413414]
+    RIGHT_EYE_LEFT = [-1.789930, 5.393625, 4.413414]
+    RIGHT_EYE_RIGHT= [-5.311432, 5.485328, 3.987654]
+    NOSE_LEFT  = [2.005628, 1.409845, 6.165652]
+    NOSE_RIGHT = [-2.005628, 1.409845, 6.165652]
+    MOUTH_LEFT = [2.774015, -2.080775, 5.048531]
+    MOUTH_RIGHT=[-2.774015, -2.080775, 5.048531]
+    LOWER_LIP= [0.000000, -3.116408, 6.097667]
+    CHIN     = [0.000000, -7.415691, 4.070434]
+
+    landmarks_3D = np.float32([LEFT_EYEBROW_LEFT,
+                               LEFT_EYEBROW_RIGHT,
+                               RIGHT_EYEBROW_LEFT,
+                               RIGHT_EYEBROW_RIGHT,
+                               LEFT_EYE_LEFT,
+                               LEFT_EYE_RIGHT,
+                               RIGHT_EYE_LEFT,
+                               RIGHT_EYE_RIGHT,
+                               NOSE_LEFT,
+                               NOSE_RIGHT,
+                               MOUTH_LEFT,
+                               MOUTH_RIGHT,
+                               LOWER_LIP,
+                               CHIN])
+
+    #Return the 2D position of our landmarks
+    assert landmarks_2D is not None, 'landmarks_2D is None'
+    landmarks_2D = landmarks_2D[[17, 21, 22, 26, 36, 39, 42, 45, 31, 35, 48, 54, 57, 8]]
+    landmarks_2D = np.asarray(landmarks_2D, dtype=np.float32).reshape(-1, 2)
+
+    retval, rvec, tvec = cv2.solvePnP(landmarks_3D,
+                                      landmarks_2D,
+                                      camera_matrix,
+                                      camera_distortion)
+
+    #Get as input the rotational vector
+    #Return a rotational matrix
+    rmat, _ = cv2.Rodrigues(rvec)
+    pose_mat = cv2.hconcat((rmat, tvec))
+
+    #euler_angles contain (pitch, yaw, roll)
+    # euler_angles = cv2.DecomposeProjectionMatrix(projMatrix=rmat, cameraMatrix=self.camera_matrix, rotMatrix, transVect, rotMatrX=None, rotMatrY=None, rotMatrZ=None)
+    _, _, _, _, _, _, euler_angles = cv2.decomposeProjectionMatrix(pose_mat)
+    pitch, yaw, roll = map(lambda temp: temp[0], euler_angles)
+
+    result = np.array([pitch, yaw, roll])
+    if radians:
+        result = np.deg2rad(result)
+    
+    return result 
+
+# class Euler_angle_calculator(object):
+#     """Euler angle calculator
+#     """
+#     def __init__(self, annot_path:str):
+        # path = os.path.dirname(annot_path)
+        # file_name = os.path.basename(annot_path).split('.')[0]
+        # cached_file = f'cached_{file_name}_angles.pkl'
+        # self.cached_file = os.path.join(path, cached_file)
+
+    # def _cal_euler_angles(self, labels):
+    #     import pickle
+    #     # Load cached file
+    #     if os.path.isfile(self.cached_file):
+    #         self.angles = pickle.load(open(self.cached_file, 'rb'))
+    #         return
+    #     if isinstance(labels, torch.Tensor):
+    #         labels = labels.numpy()
+    #     elif isinstance(labels, np.ndarray):
+    #         labels = labels.copy()
+        
+
+    #     print("Calculating euler angles....")
+    #     angles = [calculate_pitch_yaw_roll(label) for label in labels]
+    #     self.angles = np.stack(angles)
+
+    #     pickle.dump(self.angles, open(self.cached_file, 'wb'))
+    # def get_angles(self, labels):
+    #     self._cal_euler_angles(labels)
+    #     return self.angles
 class PDB(object):
     """Pose-based data balancing
     """
@@ -91,7 +194,7 @@ def process_annot(annot_path:str):
 
 def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0,
                             aug_setting:dict=None, use_weight_map=False,fix_coord=False, 
-                            add_boundary=False):
+                            add_boundary=False, add_angles=False):
     """Get training set and valiating set
     Args:
         data_root: the data root for images
@@ -113,16 +216,18 @@ def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_ima
     val_idxs = idxs[int(len(idxs)*train_size): ]
     val_images = [images[i] for i in val_idxs]
     val_labels = labels[val_idxs]
+    # Calculate Euler angle
 
-   
     train_dataset = FaceSynthetics(data_root=data_root, 
                                     images=train_images,
                                     labels=train_labels,
                                     return_gt=False,
                                     use_weight_map=use_weight_map,
                                     fix_coord=fix_coord,
+                                    add_angles=add_angles,
                                     add_boundary= add_boundary,
                                     transform='train',
+
                                     aug_setting=aug_setting)
     val_dataset = FaceSynthetics(data_root=data_root, 
                                     images=val_images,
@@ -136,7 +241,7 @@ def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_ima
 
 def get_train_val_dataset_balanced(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0,
                             aug_setting:dict=None, use_weight_map=False,fix_coord=False, 
-                            add_boundary=False):
+                            add_boundary=False, add_angles=False):
     """Get training set and valiating set
     Args:
         data_root: the data root for images
@@ -191,6 +296,14 @@ def get_train_val_dataset_balanced(data_root:str, annot_path:str, train_size=0.8
     val_images = [images[i] for i in val_idxs]
     val_labels = labels[val_idxs]
 
+    # # Calculate Euler angle
+    # if euler_angles:
+    #     calculator = Euler_angle_calculator(annot_path)
+    #     angles = calculator.get_angles(labels)
+    #     train_angles = angles[train_idxs]
+    # else:
+    #     train_angles = None
+
     train_dataset = FaceSynthetics(data_root=data_root, 
                                     images=train_images,
                                     labels=train_labels,
@@ -199,6 +312,7 @@ def get_train_val_dataset_balanced(data_root:str, annot_path:str, train_size=0.8
                                     fix_coord=fix_coord,
                                     data_weight = train_use_times,
                                     add_boundary= add_boundary,
+                                    add_angles=add_angles,
                                     transform='train',
                                     aug_setting=aug_setting)
 

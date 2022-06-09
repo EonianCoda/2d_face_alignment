@@ -29,6 +29,7 @@ def main():
     data_path = f"./data/{args.type}"
     model_path = args.model_path
     add_boundary = cfg['add_boundary']
+    aux_net = cfg['aux_net']
     ### image parameters ##
     show_line = args.show_line
     show_index = args.show_index
@@ -61,7 +62,7 @@ def main():
             sample = test_set.__getitem__(i)
             img, gt_label = sample['img'], sample['gt_label']
             img = img.to(device).unsqueeze(dim=0)
-            if add_boundary:
+            if add_boundary or aux_net:
                 outputs, _ = model(img)
             else:
                 outputs = model(img)

@@ -66,6 +66,7 @@ def main():
     fix_coord = cfg['fix_coord']
     SD = cfg['SD']
     SD_start_epoch = cfg['SD_start_epoch']
+    aux_net = cfg['Aux_net']
     ### Resume ###
     resume = args.resume
     resume_epoch = args.resume_epoch
@@ -89,6 +90,7 @@ def main():
                                                 use_image_ratio=use_image_ratio,
                                                 use_weight_map=use_weight_map,
                                                 fix_coord=fix_coord,
+                                                add_angles=aux_net,
                                                 add_boundary=add_boundary,
                                                 aug_setting=aug_setting)
         
@@ -99,6 +101,7 @@ def main():
                                                 use_image_ratio=use_image_ratio,
                                                 use_weight_map=use_weight_map,
                                                 fix_coord=fix_coord,
+                                                add_angles=aux_net,
                                                 add_boundary=add_boundary,
                                                 aug_setting=aug_setting)
     print("End of Loading annotation!!!")
@@ -172,6 +175,7 @@ def main():
     print("Aug setting = ", aug_setting)
     print(f"Balance_data = {balance_data}")
     print(f"Stochastic Depth(SD) = {SD}")
+    print(f"Aux Net = {aux_net}")
     
     aug = [k for k, v in cfg['aug_setting'].items() if v]
     aug = " ".join(aug)
@@ -217,6 +221,7 @@ def main():
         fix_coord=fix_coord,
         add_boundary=add_boundary,
         SD=SD,
+        aux_net = aux_net,
         SD_start_epoch=SD_start_epoch,
         train_hyp=train_hyp,
         resume_epoch=resume_epoch)

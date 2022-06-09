@@ -173,7 +173,7 @@ class Transform(object):
             self.color_jitter = transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3)
             self.gray_transform = transforms.Grayscale(num_output_channels=3)
             self.random_padding = RandomPadding()
-            self.random_earsing = RandomErasing()
+            self.random_erasing = RandomErasing()
     def __call__(self, sample:dict):
         sample['label'] = sample['label'].clone()
         # Random Padding
@@ -209,8 +209,8 @@ class Transform(object):
             if random.random() > 2/3:
                 sample['img'] = self.gray_transform(sample['img'])
 
-        if self.is_train and self.aug_setting['earsing']:
-            sample = self.random_earsing(sample)
+        if self.is_train and self.aug_setting['erasing']:
+            sample = self.random_erasing(sample)
         return sample
 
 

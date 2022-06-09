@@ -15,6 +15,80 @@ from scipy import interpolate
 import matplotlib.pyplot as plt
 import cv2
 import random
+
+def calculate_pitch_yaw_roll(landmarks_2D, cam_w=384, cam_h=384, radians=True):
+    """ Return the the pitch  yaw and roll angles associated with the input image.
+    @param radians When True it returns the angle in radians, otherwise in degrees.
+    """
+    c_x = cam_w/2
+    c_y = cam_h/2
+    f_x = c_x / np.tan(60/2 * np.pi / 180)
+    f_y = f_x
+
+    #Estimated camera matrix values.
+    camera_matrix = np.float32([[f_x, 0.0, c_x],
+                                [0.0, f_y, c_y],
+                                [0.0, 0.0, 1.0]])
+
+    camera_distortion = np.float32([0.0, 0.0, 0.0, 0.0, 0.0])
+
+    LEFT_EYEBROW_LEFT  = [6.825897, 6.760612, 4.402142]
+    LEFT_EYEBROW_RIGHT = [1.330353, 7.122144, 6.903745]
+    RIGHT_EYEBROW_LEFT = [-1.330353, 7.122144, 6.903745]
+    RIGHT_EYEBROW_RIGHT= [-6.825897, 6.760612, 4.402142]
+    LEFT_EYE_LEFT  = [5.311432, 5.485328, 3.987654]
+    LEFT_EYE_RIGHT = [1.789930, 5.393625, 4.413414]
+    RIGHT_EYE_LEFT = [-1.789930, 5.393625, 4.413414]
+    RIGHT_EYE_RIGHT= [-5.311432, 5.485328, 3.987654]
+    NOSE_LEFT  = [2.005628, 1.409845, 6.165652]
+    NOSE_RIGHT = [-2.005628, 1.409845, 6.165652]
+    MOUTH_LEFT = [2.774015, -2.080775, 5.048531]
+    MOUTH_RIGHT=[-2.774015, -2.080775, 5.048531]
+    LOWER_LIP= [0.000000, -3.116408, 6.097667]
+    CHIN     = [0.000000, -7.415691, 4.070434]
+
+    landmarks_3D = np.float32([LEFT_EYEBROW_LEFT,
+                               LEFT_EYEBROW_RIGHT,
+                               RIGHT_EYEBROW_LEFT,
+                               RIGHT_EYEBROW_RIGHT,
+                               LEFT_EYE_LEFT,
+                               LEFT_EYE_RIGHT,
+                               RIGHT_EYE_LEFT,
+                               RIGHT_EYE_RIGHT,
+                               NOSE_LEFT,
+                               NOSE_RIGHT,
+                               MOUTH_LEFT,
+                               MOUTH_RIGHT,
+                               LOWER_LIP,
+                               CHIN])
+
+    #Return the 2D position of our landmarks
+    assert landmarks_2D is not None, 'landmarks_2D is None'
+    landmarks_2D = landmarks_2D[[17, 21, 22, 26, 36, 39, 42, 45, 31, 35, 48, 54, 57, 8]]
+    landmarks_2D = np.asarray(landmarks_2D, dtype=np.float32).reshape(-1, 2)
+
+    retval, rvec, tvec = cv2.solvePnP(landmarks_3D,
+                                      landmarks_2D,
+                                      camera_matrix,
+                                      camera_distortion)
+
+    #Get as input the rotational vector
+    #Return a rotational matrix
+    rmat, _ = cv2.Rodrigues(rvec)
+    pose_mat = cv2.hconcat((rmat, tvec))
+
+    #euler_angles contain (pitch, yaw, roll)
+    # euler_angles = cv2.DecomposeProjectionMatrix(projMatrix=rmat, cameraMatrix=self.camera_matrix, rotMatrix, transVect, rotMatrX=None, rotMatrY=None, rotMatrZ=None)
+    _, _, _, _, _, _, euler_angles = cv2.decomposeProjectionMatrix(pose_mat)
+    pitch, yaw, roll = map(lambda temp: temp[0], euler_angles)
+
+    result = np.array([pitch, yaw, roll])
+    if radians:
+        result = np.deg2rad(result)
+    
+    return result 
+
+
 def fig2data(fig):
     """
     @brief Convert a Matplotlib figure to a 4D numpy array with RGBA channels and return it
@@ -232,7 +306,7 @@ class FaceSynthetics(Dataset):
     def __init__(self, data_root:str, images:list, labels:np.ndarray, transform="train", 
                 aug_setting:dict=None, heatmap_size=96, return_gt=True, 
                 use_weight_map=False, fix_coord=False, data_weight=None,
-                add_boundary=False) -> None:
+                add_boundary=False, add_angles=False) -> None:
         """
         Args:
             data_root: the path of the data
@@ -281,7 +355,6 @@ class FaceSynthetics(Dataset):
         else:
             self.IN_COLAB = False
         # Boundary
-
         if add_boundary:
             self.add_boundary = AddBoundary()
         else:
@@ -298,8 +371,8 @@ class FaceSynthetics(Dataset):
         else:
             self.num_data = len(self.images)
             self.mapping_idxs = [i for i in range(self.num_data)]
-
-
+        # add_euler_angle
+        self.add_angles = add_angles
         # heatmap converter
         if fix_coord:
             self.converter = Heatmap_converter(heatmap_size)
@@ -339,11 +412,16 @@ class FaceSynthetics(Dataset):
         if self.add_boundary != None:
             sample = self.add_boundary(sample)
 
+        if self.add_angles:
+            sample['euler_angle'] = calculate_pitch_yaw_roll(sample['label'].numpy())
+            sample['euler_angle'] = torch.from_numpy(sample['euler_angle'])
         # transform point to heatmap
         sample['label'] = self.converter.convert(sample['label'])
 
         if self.use_weight_map:
             sample['weight_map'] = self._generate_weight_map(sample['label'])
+
+        
         return sample
 
 class Predicting_FaceSynthetics(Dataset):

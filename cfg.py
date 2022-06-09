@@ -17,6 +17,7 @@ cfg = {
     'patience': 3,
 
     ### Model arichitecture ###
+    'Aux_net': False,
     'SD': False,
     'SD_start_epoch': 0,
     'num_HG': 2,
@@ -43,7 +44,7 @@ cfg = {
                 'gaussianBlur': False,
                 'colorJitter': False,
                 'padding': False,
-                'earsing': False,
+                'erasing': False,
                 'grayscale': False},                    
     ### Optimizer Type ###  
     'optimizer_idx': 0,

@@ -2,6 +2,7 @@ from model.FAN import FAN
 from model.FAN_boundary import Boundary_FAN
 from model.FAN_SD import FAN_SD
 from model.FAN_WS import FAN_WS
+from model.FAN_aux import FAN_aux
 from model.blocks import HPM_ConvBlock, Bottleneck, InvertedResidual
 from model.blocks import CA_Block, SELayer
 
@@ -36,7 +37,12 @@ def get_model(cfg:dict):
     GN = cfg['GN']
     use_gn = cfg['use_gn']
     use_ws = cfg['use_ws']
-    if SD:
+
+    aux_net = cfg['Aux_net']
+    if aux_net:
+        return FAN_aux(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block,
+                use_CoordConv=use_CoordConv, add_CoordConv_inHG=add_CoordConv_inHG, with_r=with_r)
+    elif SD:
         return FAN_SD(num_HG, HG_depth, num_feats, attention_block=attention_block,use_CoordConv=use_CoordConv,
                      add_CoordConv_inHG=add_CoordConv_inHG, with_r=with_r)
     elif add_boundary:
