@@ -54,6 +54,7 @@ def main():
     balance_data = cfg['balance_data']
     aug_setting = cfg['aug_setting']
     add_boundary = cfg['add_boundary']
+    bg_negative = cfg['bg_negative']
     ### training hyperparameter ###
     epoch = cfg['epoch']
     seed = cfg['seed']
@@ -92,6 +93,7 @@ def main():
                                                 fix_coord=fix_coord,
                                                 add_angles=aux_net,
                                                 add_boundary=add_boundary,
+                                                bg_negative=bg_negative,
                                                 aug_setting=aug_setting)
         
     else:
@@ -103,6 +105,7 @@ def main():
                                                 fix_coord=fix_coord,
                                                 add_angles=aux_net,
                                                 add_boundary=add_boundary,
+                                                bg_negative=bg_negative,
                                                 aug_setting=aug_setting)
     print("End of Loading annotation!!!")
 
@@ -178,6 +181,7 @@ def main():
     print(f"Aux Net = {aux_net}")
     print(f"Weight standardization(WS) = {cfg['use_ws']}")
     print(f"Group normalization(GN) = {cfg['use_gn']}")
+    print(f"'Backgroud negative = {cfg['bg_negative']}")
 
 
     

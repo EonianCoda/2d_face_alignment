@@ -188,11 +188,14 @@ class AddBoundary(object):
         return sample
 
 class Heatmap_converter(object):
-    def __init__(self, heatmap_size=96, window_size=7, sigma=1.75):
+    def __init__(self, heatmap_size=96, window_size=7, sigma=1.75, bg_negative=False):
         self.heatmap_size = heatmap_size
         self.window_size = window_size
         self.pad_w = window_size // 2
         self.sigma = sigma
+        self.bg_negative = bg_negative
+        self.bg_value = -0.2
+        self.fg_ratio = 0.2 
         self._generate_gaussian_kernel()
 
     def _generate_gaussian_kernel(self):
@@ -249,7 +252,24 @@ class Heatmap_converter(object):
         label = torch.round(label.clone() * 0.25).long()
         offsets = (gt_label - label *4)
 
-        heatmap = torch.zeros((label.shape[0], self.heatmap_size, self.heatmap_size)).float()
+        if self.bg_negative:
+            heatmap = torch.ones((label.shape[0], self.heatmap_size, self.heatmap_size)).float() * self.bg_value
+            max_coord, _ = label.max(dim=0)
+            min_coord, _ = label.min(dim=0)
+            # X coord
+            max_x = int(max_coord[0])
+            min_x = int(min_coord[0])
+            max_x = min(int(max_x * (1.0 + self.fg_ratio)), self.heatmap_size - 1)
+            min_x = max(int(min_x * (1.0 - self.fg_ratio)), 0)
+            # Y coord
+            max_y = int(max_coord[1])
+            min_y = int(min_coord[1])
+            max_y = min(int(max_y * (1.0 + self.fg_ratio)), self.heatmap_size - 1)
+            min_y = max(int(min_y * (1.0 - self.fg_ratio)), 0)
+            heatmap[:, min_y: max_y, min_x: max_x] = 0.0
+        else:
+            heatmap = torch.zeros((label.shape[0], self.heatmap_size, self.heatmap_size)).float()
+
         for i, (offset, (x, y)) in enumerate(zip(offsets, label)):
             kernel = self._get_kernel(offset)
 
@@ -304,9 +324,8 @@ class Old_heatmap_converter(object):
 
 class FaceSynthetics(Dataset):
     def __init__(self, data_root:str, images:list, labels:np.ndarray, transform="train", 
-                aug_setting:dict=None, heatmap_size=96, return_gt=True, 
-                use_weight_map=False, fix_coord=False, data_weight=None,
-                add_boundary=False, add_angles=False) -> None:
+                aug_setting:dict=None, heatmap_size=96, return_gt=True, use_weight_map=False, 
+                fix_coord=False, data_weight=None,add_boundary=False, bg_negative=False, add_angles=False) -> None:
         """
         Args:
             data_root: the path of the data
@@ -375,7 +394,7 @@ class FaceSynthetics(Dataset):
         self.add_angles = add_angles
         # heatmap converter
         if fix_coord:
-            self.converter = Heatmap_converter(heatmap_size)
+            self.converter = Heatmap_converter(heatmap_size, bg_negative=bg_negative)
         else:
             self.converter = Old_heatmap_converter(heatmap_size)
 

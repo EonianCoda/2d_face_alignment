@@ -3,7 +3,7 @@ from model.FAN_boundary import Boundary_FAN
 from model.FAN_SD import FAN_SD
 from model.FAN_WSGN import FAN_WSGN
 from model.FAN_aux import FAN_aux
-from model.blocks import HPM_ConvBlock, Bottleneck, InvertedResidual
+from model.blocks import HPM_ConvBlock, Bottleneck, HPM_ConvBlock_WSGN, InvertedResidual
 from model.blocks import CA_Block, SELayer
 
 def get_model(cfg:dict):
@@ -52,7 +52,7 @@ def get_model(cfg:dict):
         return Boundary_FAN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block,
                     with_r=with_r)
     elif use_gn or use_ws:
-        return FAN_WSGN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block, use_CoordConv=use_CoordConv, 
+        return FAN_WSGN(num_HG, HG_depth, num_feats, resBlock=HPM_ConvBlock_WSGN, attention_block=attention_block, use_CoordConv=use_CoordConv, 
                         use_gn=use_gn, use_ws=use_ws, add_CoordConv_inHG=add_CoordConv_inHG, with_r=with_r)
     else:
         return FAN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block,

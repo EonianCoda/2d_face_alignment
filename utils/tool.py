@@ -87,7 +87,7 @@ def process_loss(loss_type:str, criterion, outputs:torch.Tensor, label:torch.Ten
 def process_boundary(loss_type:str, criterion, outputs:torch.Tensor, boundary:torch.Tensor, weight_map:torch.Tensor=None):
     loss = 0
     if loss_type =="L2":
-        num_target = (boundary != 0).sum()
+        num_target = (boundary > 0).sum()
         for output in outputs:
             loss += criterion(output, boundary) / num_target
     elif loss_type == "wing_loss":

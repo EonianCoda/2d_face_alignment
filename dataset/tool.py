@@ -193,7 +193,7 @@ def process_annot(annot_path:str):
     return images, labels
 
 def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0,
-                            aug_setting:dict=None, use_weight_map=False,fix_coord=False, 
+                            aug_setting:dict=None, use_weight_map=False,fix_coord=False, bg_negative=False,
                             add_boundary=False, add_angles=False):
     """Get training set and valiating set
     Args:
@@ -225,6 +225,7 @@ def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_ima
                                     use_weight_map=use_weight_map,
                                     fix_coord=fix_coord,
                                     add_angles=add_angles,
+                                    bg_negative=bg_negative,
                                     add_boundary= add_boundary,
                                     transform='train',
 
@@ -234,13 +235,14 @@ def get_train_val_dataset(data_root:str, annot_path:str, train_size=0.8, use_ima
                                     labels=val_labels,
                                     return_gt= True,
                                     use_weight_map=use_weight_map,
-                                    add_boundary= add_boundary,
                                     fix_coord=fix_coord,
+                                    bg_negative=bg_negative,
+                                    add_boundary= add_boundary,
                                     transform='val')
     return train_dataset, val_dataset
 
 def get_train_val_dataset_balanced(data_root:str, annot_path:str, train_size=0.8, use_image_ratio=1.0,
-                            aug_setting:dict=None, use_weight_map=False,fix_coord=False, 
+                            aug_setting:dict=None, use_weight_map=False,fix_coord=False, bg_negative=False,
                             add_boundary=False, add_angles=False):
     """Get training set and valiating set
     Args:
@@ -312,6 +314,7 @@ def get_train_val_dataset_balanced(data_root:str, annot_path:str, train_size=0.8
                                     fix_coord=fix_coord,
                                     data_weight = train_use_times,
                                     add_boundary= add_boundary,
+                                    bg_negative=bg_negative,
                                     add_angles=add_angles,
                                     transform='train',
                                     aug_setting=aug_setting)
@@ -321,8 +324,9 @@ def get_train_val_dataset_balanced(data_root:str, annot_path:str, train_size=0.8
                                     labels=val_labels,
                                     return_gt= True,
                                     use_weight_map=use_weight_map,
-                                    add_boundary= add_boundary,
                                     fix_coord=fix_coord,
+                                    add_boundary= add_boundary,
+                                    bg_negative=bg_negative,
                                     transform='val')
     return train_dataset, val_dataset
 
