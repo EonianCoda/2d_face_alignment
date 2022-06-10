@@ -1,7 +1,7 @@
 from model.FAN import FAN
 from model.FAN_boundary import Boundary_FAN
 from model.FAN_SD import FAN_SD
-from model.FAN_WS import FAN_WS
+from model.FAN_WSGN import FAN_WSGN
 from model.FAN_aux import FAN_aux
 from model.blocks import HPM_ConvBlock, Bottleneck, InvertedResidual
 from model.blocks import CA_Block, SELayer
@@ -32,9 +32,12 @@ def get_model(cfg:dict):
     add_CoordConv_inHG = cfg['add_CoordConv_inHG']
     with_r = cfg['with_r']
 
+    # Boundary net
     add_boundary = cfg['add_boundary']
+    # add stochastic dropout
     SD = cfg['SD']
-    GN = cfg['GN']
+
+    # group normalization
     use_gn = cfg['use_gn']
     use_ws = cfg['use_ws']
 
@@ -48,9 +51,9 @@ def get_model(cfg:dict):
     elif add_boundary:
         return Boundary_FAN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block,
                     with_r=with_r)
-    elif GN:
-        return FAN_WS(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block,
-                use_CoordConv=use_CoordConv,use_gn=use_gn,use_ws=use_ws, add_CoordConv_inHG=add_CoordConv_inHG, with_r=with_r)
+    elif use_gn or use_ws:
+        return FAN_WSGN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block, use_CoordConv=use_CoordConv, 
+                        use_gn=use_gn, use_ws=use_ws, add_CoordConv_inHG=add_CoordConv_inHG, with_r=with_r)
     else:
         return FAN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block,
                 use_CoordConv=use_CoordConv, add_CoordConv_inHG=add_CoordConv_inHG, with_r=with_r)

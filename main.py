@@ -176,6 +176,10 @@ def main():
     print(f"Balance_data = {balance_data}")
     print(f"Stochastic Depth(SD) = {SD}")
     print(f"Aux Net = {aux_net}")
+    print(f"Weight standardization(WS) = {cfg['use_ws']}")
+    print(f"Group normalization(GN) = {cfg['use_gn']}")
+
+
     
     aug = [k for k, v in cfg['aug_setting'].items() if v]
     aug = " ".join(aug)

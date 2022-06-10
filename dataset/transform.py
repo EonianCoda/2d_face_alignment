@@ -170,10 +170,10 @@ class Transform(object):
             self.random_noise = RandomNoise()
             self.random_rotation = RandomRoation()
             self.gaussian_blur = transforms.GaussianBlur((7,7), sigma=(1.0, 2.0))
-            self.color_jitter = transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3)
+            self.color_jitter = transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.05)
             self.gray_transform = transforms.Grayscale(num_output_channels=3)
             self.random_padding = RandomPadding()
-            self.random_erasing = RandomErasing()
+            self.random_erasing = RandomErasing(1/3)
     def __call__(self, sample:dict):
         sample['label'] = sample['label'].clone()
         # Random Padding

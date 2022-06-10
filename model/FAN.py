@@ -64,8 +64,8 @@ class HourGlassNet(nn.Module):
 class FAN(nn.Module):
     """Facial Alignment network
     """
-    def __init__(self, num_HG:int = 4, HG_depth:int = 4, num_feats:int = 256, 
-                num_classes:int = 68, resBlock=HPM_ConvBlock, attention_block=None,use_CoordConv=False, with_r=False, add_CoordConv_inHG=False):
+    def __init__(self, num_HG:int = 4, HG_depth:int = 4, num_feats:int = 256, num_classes:int = 68, resBlock=HPM_ConvBlock, 
+                attention_block=None,use_CoordConv=False, with_r=False, add_CoordConv_inHG=False):
         super(FAN, self).__init__()
         self.num_HG = num_HG # num of how many hourglass stack
         self.HG_dpeth = HG_depth # num of recursion in hourglass net

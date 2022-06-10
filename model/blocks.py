@@ -10,6 +10,14 @@ def conv3x3(inplanes:int, planes:int, stride=1, padding=1, bias=False, dilation=
     return nn.Conv2d(inplanes, planes, kernel_size=3, dilation=dilation,
                      stride=stride, padding=padding, bias=bias)
 
+def ws_conv3x3(inplanes:int, planes:int, stride=1, padding=1, bias=False, dilation=1):
+    "3x3 convolution with weight standardization"
+    inplanes = int(inplanes)
+    planes = int(planes)
+    return WS_conv2d(inplanes, planes, kernel_size=3, dilation=dilation,
+                     stride=stride, padding=padding, bias=bias)
+
+
 def conv1x1(inplanes:int, planes:int, bias=False):
     "1x1 convolution"
     inplanes = int(inplanes)
@@ -17,10 +25,43 @@ def conv1x1(inplanes:int, planes:int, bias=False):
     return nn.Conv2d(inplanes, planes, kernel_size=1,bias=bias,
                      stride=1, padding=0)
 
+def ws_conv1x1(inplanes:int, planes:int, bias=False):
+    "1x1 convolution with weight standardization"
+    inplanes = int(inplanes)
+    planes = int(planes)
+    return WS_conv2d(inplanes, planes, kernel_size=1,bias=bias,
+                     stride=1, padding=0)
+
 def depthwise_conv3x3(planes:int, stride=1, padding=1, bias=False, dilation=1):
     "3x3 depthwise convolution "
     return nn.Conv2d(planes, planes, kernel_size=3, dilation=dilation,
                      stride=stride, padding=padding, bias=bias, groups=planes)
+
+def groupNorm(inplane:int):
+    # if group_type == 0:
+    #     groups = 32
+    # else:
+    groups = min(inplane // 16, 2)
+    return nn.GroupNorm(groups, inplane)
+
+
+class WS_conv2d(nn.Conv2d):
+    """Convolution 2d with weight standardization
+    """
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1,
+                 padding=0, dilation=1, groups=1, bias=True):
+        super(WS_conv2d, self).__init__(in_channels, out_channels, kernel_size, stride,
+                 padding, dilation, groups, bias)
+
+    def forward(self, x):
+        weight = self.weight
+        weight_mean = weight.mean(dim=1, keepdim=True).mean(dim=2,
+                                  keepdim=True).mean(dim=3, keepdim=True)
+        weight = weight - weight_mean
+        std = weight.view(weight.size(0), -1).std(dim=1).view(-1, 1, 1, 1) + 1e-5
+        weight = weight / std.expand_as(weight)
+        return F.conv2d(x, weight, self.bias, self.stride,
+                        self.padding, self.dilation, self.groups)
 
 class SELayer(nn.Module):
     def __init__(self, channel, reduction=4):
@@ -191,52 +232,8 @@ class HPM_ConvBlock(nn.Module):
 
         return out3
 
-class HPM_ConvBlock_gn(nn.Module):
-    """Hierarchical, parallel and multi-scale block
-    """
-    def __init__(self, inplanes:int, planes:int):
-        super(HPM_ConvBlock, self).__init__()
-        self.bn1 = nn.GroupNorm(32,inplanes)
-        self.conv1 = conv3x3(inplanes, planes // 2)
-        self.bn2 = nn.GroupNorm(32,inplanes)
-        self.conv2 = conv3x3(planes // 2, planes // 4)
-        self.bn3 = nn.GroupNorm(32,inplanes)
-        self.conv3 = conv3x3(planes // 4, planes // 4)
-
-        self.relu = nn.ReLU(inplace=True)
-        if inplanes != planes:
-            self.shortcut = nn.Sequential(
-                nn.GroupNorm(32,inplanes),
-                nn.ReLU(inplace=True),
-                conv1x1(inplanes, planes)
-            )
-        else:
-            self.shortcut = None
-
-    def forward(self, x):
-        residual = x
-
-        out1 = self.bn1(x)
-        out1 = self.relu(out1)
-        out1 = self.conv1(out1)
-
-        out2 = self.bn2(out1)
-        out2 = self.relu(out2)
-        out2 = self.conv2(out2)
-
-        out3 = self.bn3(out2)
-        out3 = self.relu(out3)
-        out3 = self.conv3(out3)
-
-        out3 = torch.cat([out1, out2, out3], axis=1)
-        if self.shortcut != None:
-            residual =  self.shortcut(residual)
-        out3 += residual
-
-        return out3
-
 class HPM_ConvBlock_SD(nn.Module):
-    """Hierarchical, parallel and multi-scale block
+    """Hierarchical, parallel and multi-scale block with stochastic dropout
     """
     def __init__(self, inplanes:int, planes:int, prob=1.0):
         super(HPM_ConvBlock_SD, self).__init__()
@@ -293,7 +290,57 @@ class HPM_ConvBlock_SD(nn.Module):
                     return x
         else:
             return self._forward(x)
-        
+
+class HPM_ConvBlock_WSGN(nn.Module):
+    """Hierarchical, parallel and multi-scale block with weight standardization or group normalization
+    """
+    def __init__(self, inplanes:int, planes:int, use_ws=False, use_gn=False):
+
+        super(HPM_ConvBlock_WSGN, self).__init__()
+        # Set block
+        conv33 = ws_conv3x3 if use_ws else conv3x3
+        conv11 = ws_conv1x1 if use_ws else conv1x1
+        norm_block = groupNorm if use_gn else nn.BatchNorm2d 
+
+        self.norm1 = norm_block(inplanes)
+        self.conv1 =  conv33(inplanes, planes // 2)
+        self.norm2 = norm_block(planes // 2)
+        self.conv2 = conv33(planes // 2, planes // 4)
+        self.norm3 = norm_block(planes // 4)
+        self.conv3 = conv33(planes // 4, planes // 4)
+
+        self.relu = nn.ReLU(inplace=True)
+        if inplanes != planes:
+            self.shortcut = nn.Sequential(
+                norm_block(inplanes),
+                nn.ReLU(inplace=True),
+                conv11(inplanes, planes)
+            )
+        else:
+            self.shortcut = None
+
+    def forward(self, x):
+        residual = x
+
+        out1 = self.norm1(x)
+        out1 = self.relu(out1)
+        out1 = self.conv1(out1)
+
+        out2 = self.norm2(out1)
+        out2 = self.relu(out2)
+        out2 = self.conv2(out2)
+
+        out3 = self.norm3(out2)
+        out3 = self.relu(out3)
+        out3 = self.conv3(out3)
+
+        out3 = torch.cat([out1, out2, out3], axis=1)
+        if self.shortcut != None:
+            residual =  self.shortcut(residual)
+        out3 += residual
+
+        return out3
+
 class AddCoords(nn.Module):
 
     def __init__(self, with_r=False):
@@ -357,15 +404,16 @@ class AddCoords(nn.Module):
 
         return ret
 
-
 class CoordConv(nn.Module):
 
-    def __init__(self, in_channels, out_channels, with_r=False, **kwargs):
+    def __init__(self, in_channels, out_channels, with_r=False, use_ws=False,**kwargs):
         super().__init__()
         self.addcoords = AddCoords(with_r=with_r)
         extra_channel = 3 if with_r else 2
-        self.conv = nn.Conv2d(in_channels + extra_channel, out_channels, **kwargs)
-
+        if not use_ws:
+            self.conv = nn.Conv2d(in_channels + extra_channel, out_channels, **kwargs)
+        else:
+            self.conv = WS_conv2d(in_channels + extra_channel, out_channels, **kwargs)
     def forward(self, x):
         ret = self.addcoords(x)
         ret = self.conv(ret)
