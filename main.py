@@ -137,7 +137,8 @@ def main():
     elif loss_type == "adaptive_wing_loss":
         criterion = Adaptive_Wing_Loss()
     elif loss_type == "weighted_L2":
-        criterion = Weighted_L2(reduction="sum")
+        weight = cfg['weight']
+        criterion = Weighted_L2(reduction="sum", weight=float(weight))
     
     # Scheduler
     # if scheduler_type == 0:
@@ -175,6 +176,7 @@ def main():
     print(f"Use CoordConv = {cfg['use_CoordConv']}")
     print(f"With_r = {cfg['with_r']}")
     print(f"Add CoordConv inHG = {cfg['add_CoordConv_inHG']}")
+    print(f"Output CoordConv = {cfg['output_CoordConv']}")
     print(f"Add add_boundary = {cfg['add_boundary']}")
     print("Aug setting = ", aug_setting)
     print(f"Balance_data = {balance_data}")

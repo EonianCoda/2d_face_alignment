@@ -1,4 +1,3 @@
-from signal import raise_signal
 from torch.optim.lr_scheduler import _LRScheduler, ReduceLROnPlateau
 from torch.optim.lr_scheduler import MultiStepLR
 import math

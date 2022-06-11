@@ -7,7 +7,7 @@ cfg = {
                 3:"wing_loss",
                 4:"adaptive_wing_loss",
                 5:"weighted_L2"},
-
+    'weight': 2, # For weighted L2
     ### Data Balance ###
     'balance_data': True,
     
@@ -17,7 +17,7 @@ cfg = {
     'milestones': [],
     'patience': 3,
     ### Optimizer ###
-    'weight_decay': 1e-6,
+    'weight_decay': 1e-6, # default = 1e-6
     ### Model arichitecture ###
     'Aux_net': False,
     'SD': False, # stochastic dropout
@@ -33,6 +33,7 @@ cfg = {
     'use_CoordConv': True,  # if addBoundary == True, then this arg is useless.
     'with_r': False,
     'add_CoordConv_inHG': False,  # if addBoundary == True, then this arg is useless.
+    'output_CoordConv': False, # only for origin FAN
     # For weight standarization
     'use_ws': False, # weight standardization
     'use_gn': False, # use group normalization instead of batch normalization

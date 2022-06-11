@@ -31,7 +31,7 @@ def get_model(cfg:dict):
     use_CoordConv = cfg['use_CoordConv']
     add_CoordConv_inHG = cfg['add_CoordConv_inHG']
     with_r = cfg['with_r']
-
+    output_CoordConv = cfg['output_CoordConv']
     # Boundary net
     add_boundary = cfg['add_boundary']
     # add stochastic dropout
@@ -56,4 +56,5 @@ def get_model(cfg:dict):
                         use_gn=use_gn, use_ws=use_ws, add_CoordConv_inHG=add_CoordConv_inHG, with_r=with_r)
     else:
         return FAN(num_HG, HG_depth, num_feats, resBlock=resBlock, attention_block=attention_block,
-                use_CoordConv=use_CoordConv, add_CoordConv_inHG=add_CoordConv_inHG, with_r=with_r)
+                use_CoordConv=use_CoordConv, add_CoordConv_inHG=add_CoordConv_inHG, with_r=with_r, 
+                output_CoordConv=output_CoordConv)
