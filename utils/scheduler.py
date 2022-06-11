@@ -16,17 +16,21 @@ class Warmup_MultiStepDecay(_LRScheduler):
     def __init__(self, optimizer, num_warm_steps, milestones=[]):
         self.num_warm_steps = num_warm_steps
         self.cur_step = 0
-        self.milestones = milestones
-        
+        #self.milestones = milestones
+       
         # No weight decay
         if milestones == []:
             self.after_scheduler = None
         else:
             if num_warm_steps > milestones[0]:
                 raise ValueError("Warm steps should less than milestone[0]")
-            self.after_scheduler = MultiStepLR(optimizer, milestones=self.milestones, gamma=0.1)
+            self.milestones = []
+            for step in milestones:
+                self.milestones.append(step - num_warm_steps)
+
+            self.after_scheduler = MultiStepLR(optimizer, milestones=self.milestones, gamma=0.5)
         super(Warmup_MultiStepDecay, self).__init__(optimizer)
-    
+        
     def get_lr(self) -> float:
         if self.cur_step <= self.num_warm_steps:
             ratio = warm_up_ratio(self.cur_step, self.num_warm_steps)
@@ -42,7 +46,7 @@ class Warmup_MultiStepDecay(_LRScheduler):
             self.cur_step = 1 if self.cur_step == 0 else self.cur_step + 1
             for param_group, lr in zip(self.optimizer.param_groups, self.get_lr()):
                 param_group['lr'] = lr
-        if self.after_scheduler != None:
+        elif self.after_scheduler != None:
             self.after_scheduler.step()
 
 # class Warmup_ReduceLROnPlateau(_LRScheduler):

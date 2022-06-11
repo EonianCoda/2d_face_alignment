@@ -199,7 +199,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
 
             loss.backward()
             if i % every_step_update == 0 or i == len(train_loader):
-                nn.utils.clip_grad_norm_(model.parameters(), max_norm= 5.)
+                nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.)
                 optimizer.step()
                 optimizer.zero_grad(set_to_none=True)
                 # warm up step
