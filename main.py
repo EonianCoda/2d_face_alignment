@@ -144,7 +144,7 @@ def main():
     #     scheduler = ReduceLROnPlateau(optimizer, patience=3, verbose=True)
     # elif scheduler_type == 1:
     warm_step = cfg['warm_step']
-    milestones = cfg[milestones]
+    milestones = cfg['milestones']
     #patience = cfg['patience']
     scheduler = Warmup_MultiStepDecay(optimizer, warm_step, milestones=milestones)
     model = model.to(device)

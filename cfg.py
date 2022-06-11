@@ -14,7 +14,7 @@ cfg = {
     ### Scheduler setting ###
     # 'scheduler_type': 1,  # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
     'warm_step': 2000,   # If scheduler == 1, then use warm_epoch arg
-    'milestone': [],
+    'milestones': [],
     'patience': 3,
     ### Optimizer ###
     'weight_decay': 1e-6,
