@@ -101,12 +101,15 @@ class FAN_WSGN(nn.Module):
             
             self.add_module(f"HG{stack_idx}", HourGlassNet(self.HG_dpeth, self.num_feats, resBlock=resBlock, attention_block=attention_block, add_CoordConv=add_CoordConv_inHG, with_r=with_r, use_ws=use_ws, use_gn=use_gn))
             self.add_module(f"stack{stack_idx}_conv1", resBlock(self.num_feats, self.num_feats, use_ws=use_ws, use_gn=use_gn))
+            self.add_module(f"stack{stack_idx}_conv1_norm", normBlock(int(self.num_feats)))
             self.add_module(f"stack{stack_idx}_conv2", conv11(self.num_feats, self.num_feats, bias=True))
             self.add_module(f"stack{stack_idx}_norm1", normBlock(int(self.num_feats)))
-            self.add_module(f"stack{stack_idx}_conv_out", conv11(self.num_feats, self.num_classes, bias=True))
+            self.add_module(f"stack{stack_idx}_conv_out", conv1x1(self.num_feats, self.num_classes, bias=True))
             if stack_idx != self.num_HG:
                 self.add_module(f"stack{stack_idx}_conv3", conv11(self.num_feats, self.num_feats, bias=True))
+                self.add_module(f"stack{stack_idx}_conv3_norm", normBlock(int(self.num_feats)))
                 self.add_module(f"stack{stack_idx}_shortcut", conv11(self.num_classes, self.num_feats, bias=True))
+                self.add_module(f"stack{stack_idx}_shortcut_norm", normBlock(int(self.num_feats)))
         self._weight_init()
     def _weight_init(self):
         for m in self.modules():
@@ -147,6 +150,7 @@ class FAN_WSGN(nn.Module):
                 residual = x
             x = self._modules[f"HG{stack_idx}"](x)
             x = self._modules[f"stack{stack_idx}_conv1"](x)
+            x = self._modules[f"stack{stack_idx}_conv1_norm"](x)
             x = self._modules[f"stack{stack_idx}_conv2"](x)
             x = self.relu(self._modules[f"stack{stack_idx}_norm1"](x))
             # Output heatmap
@@ -155,6 +159,8 @@ class FAN_WSGN(nn.Module):
             # lower and upper branch
             if stack_idx != self.num_HG:
                 x = self._modules[f"stack{stack_idx}_conv3"](x)
+                x = self._modules[f"stack{stack_idx}_conv3_norm"](x)
                 out_ = self._modules[f"stack{stack_idx}_shortcut"](out)
+                out_ = self._modules[f"stack{stack_idx}_shortcut_norm"](out_)
                 x = out_ + residual + x
         return outputs

@@ -16,14 +16,14 @@ from cfg import *
 import argparse
 
 def add_weight_decay(net, l2_value):
-    """ref from https://cinnamonaitaiwan.medium.com/%E5%8D%B7%E7%A9%8D%E7%A5%9E%E7%B6%93%E7%B6%B2%E8%B7%AF%E5%84%AA%E5%8C%96part1-bag-of-tricks-for-improving-your-neural-networks-training-8fd407d37071
+    """no weight decay on bias and normalization layer
     """
     decay, no_decay = [], []
     for name, param in net.named_parameters():
         if not param.requires_grad:
             continue  # skip frozen weights
         # skip bias and bn layer
-        if name.endswith(".bias") or ("_bn" in name):
+        if name.endswith(".bias") or ("_bn" in name) or ("norm" in name):
             no_decay.append(param)
         else:
             decay.append(param)
