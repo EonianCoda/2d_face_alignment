@@ -1,15 +1,13 @@
 # Torch
-from copyreg import pickle
 import torch
 from torch.utils.data import DataLoader
 import torch.nn as nn
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 from losses.weighted_L2 import Weighted_L2
 # Model
 from model.tool import get_model
 from dataset.tool import get_train_val_dataset, get_test_dataset, get_train_val_dataset_balanced
 from utils.tool import fixed_seed, load_parameters, train
-from utils.scheduler import Warmup_ReduceLROnPlateau
+from utils.scheduler import Warmup_MultiStepDecay
 from losses.wing_loss import Adaptive_Wing_Loss, Wing_Loss
 from cfg import *
 
@@ -50,17 +48,19 @@ def main():
 
     ## Data setting ###
     batch_size =  cfg['batch_size']
+    update_batch_size = cfg['update_batch_size']
+    every_step_update = max(update_batch_size // batch_size, 1)
     split_ratio = cfg['split_ratio']
     balance_data = cfg['balance_data']
     aug_setting = cfg['aug_setting']
     add_boundary = cfg['add_boundary']
     bg_negative = cfg['bg_negative']
-    ### training hyperparameter ###
+    ### Training hyperparameter ###
     epoch = cfg['epoch']
     seed = cfg['seed']
     lr = cfg['lr']
-
-    scheduler_type = cfg['scheduler_type']
+    ### Scheduler Setting
+    weight_decay = cfg['weight_decay']
     optimizer_type = cfg['optimizers'][cfg['optimizer_idx']]
     loss_type = cfg['losses'][cfg['loss_idx']]
     use_weight_map = (loss_type == "weighted_L2") or (loss_type == "adaptive_wing_loss")
@@ -112,7 +112,7 @@ def main():
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers= 2, pin_memory=True, drop_last=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers= 2, pin_memory=True, drop_last=True)
 
-    params = add_weight_decay(model, 1e-6)
+    params = add_weight_decay(model, weight_decay)
     # Optimizer
     if optimizer_type == "RMSprop":
         optimizer = torch.optim.RMSprop(params,
@@ -137,15 +137,16 @@ def main():
     elif loss_type == "adaptive_wing_loss":
         criterion = Adaptive_Wing_Loss()
     elif loss_type == "weighted_L2":
-        criterion = Weighted_L2()
+        criterion = Weighted_L2(reduction="sum")
     
     # Scheduler
-    if scheduler_type == 0:
-        scheduler = ReduceLROnPlateau(optimizer, patience=3, verbose=True)
-    elif scheduler_type == 1:
-        warm_step = cfg['warm_step']
-        patience = cfg['patience']
-        scheduler = Warmup_ReduceLROnPlateau(optimizer, warm_step, patience=patience, verbose=True)
+    # if scheduler_type == 0:
+    #     scheduler = ReduceLROnPlateau(optimizer, patience=3, verbose=True)
+    # elif scheduler_type == 1:
+    warm_step = cfg['warm_step']
+    milestones = cfg[milestones]
+    #patience = cfg['patience']
+    scheduler = Warmup_MultiStepDecay(optimizer, warm_step, milestones=milestones)
     model = model.to(device)
     
     # Testing data
@@ -181,7 +182,7 @@ def main():
     print(f"Aux Net = {aux_net}")
     print(f"Weight standardization(WS) = {cfg['use_ws']}")
     print(f"Group normalization(GN) = {cfg['use_gn']}")
-    print(f"'Backgroud negative = {cfg['bg_negative']}")
+    print(f"Backgroud negative = {cfg['bg_negative']}")
 
 
     
@@ -229,6 +230,7 @@ def main():
         fix_coord=fix_coord,
         add_boundary=add_boundary,
         SD=SD,
+        every_step_update=every_step_update,
         aux_net = aux_net,
         SD_start_epoch=SD_start_epoch,
         train_hyp=train_hyp,

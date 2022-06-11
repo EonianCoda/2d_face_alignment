@@ -8,7 +8,6 @@ class Weighted_L2(nn.Module):
         self.reduction = reduction
     def forward(self, pred:torch.Tensor, target:torch.Tensor, weight_map:torch.Tensor):
         w = self.weight * (weight_map + 1)
-    
         if self.reduction == "sum":
             return (((target - pred) ** 2) * w).sum()
         elif self.reduction == "mean":

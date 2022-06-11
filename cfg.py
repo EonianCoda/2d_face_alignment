@@ -12,10 +12,12 @@ cfg = {
     'balance_data': True,
     
     ### Scheduler setting ###
-    'scheduler_type': 1,  # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
+    # 'scheduler_type': 1,  # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
     'warm_step': 2000,   # If scheduler == 1, then use warm_epoch arg
+    'milestone': [],
     'patience': 3,
-
+    ### Optimizer ###
+    'weight_decay': 1e-6,
     ### Model arichitecture ###
     'Aux_net': False,
     'SD': False, # stochastic dropout
@@ -61,7 +63,8 @@ cfg = {
                 1: "Bottleneck",
                 2: "InvertedResidual"},
     ### Training hyperparameters ###
-    'batch_size': 8,
+    'batch_size':8,
+    'update_batch_size': 8,
     'lr':1e-4,
     'epoch':20,
     ### training setting ##

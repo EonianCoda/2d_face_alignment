@@ -70,7 +70,7 @@ def val(model, test_loader, device, fix_coord=False, add_boundary=False):
 def process_loss(loss_type:str, criterion, outputs:torch.Tensor, label:torch.Tensor, weight_map:torch.Tensor=None):
     loss = 0
     if loss_type =="L2":
-        num_target = (label != 0).sum()
+        num_target = (label > 0).sum()
         for output in outputs:
             loss += criterion(output, label) / num_target
     elif loss_type == "wing_loss":
@@ -79,8 +79,9 @@ def process_loss(loss_type:str, criterion, outputs:torch.Tensor, label:torch.Ten
     elif loss_type == "weighted_L2" or loss_type == "adaptive_wing_loss":
         if weight_map == None:
             raise ValueError("Weight map cannot be None!")
+        num_target = (label > 0).sum()  
         for output in outputs:
-            loss += criterion(output, label, weight_map)
+            loss += criterion(output, label, weight_map) / num_target
 
     return loss
 
@@ -114,7 +115,7 @@ def process_angle_and_loss(preds:torch.Tensor, labels:torch.Tensor, pred_angles,
 
 def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, 
         loss_type:str, exp_name="", train_hyp=dict(), resume_epoch=-1,fix_coord=False, SD=False, SD_start_epoch=0,
-        add_boundary=False, aux_net=False):
+        add_boundary=False, aux_net=False, every_step_update=1):
     start_train = time.time()
     # Create writerr for recording loss
     if exp_name == "":
@@ -157,19 +158,18 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
         writer.add_scalar(tag="train/learning_rate",
                             scalar_value=float(optimizer.param_groups[0]['lr']), 
                             global_step=epoch)
-        
+        print(f"Current Learning rate = {optimizer.param_groups[0]['lr']:.6f}")
         # Training part
         model.train()
         train_loss = 0.0
-        for sample in tqdm(train_loader):
+        optimizer.zero_grad(set_to_none=True)
+        for i, sample in enumerate(tqdm(train_loader)):
             img = sample['img']
             label = sample['label']
-
             # Add weight map
             weight_map = None
             if use_weight_map:
                 weight_map = sample['weight_map'].to(device)
-                
             # Add boundary
             if add_boundary:
                 boundary = sample['boundary'].to(device)
@@ -196,11 +196,14 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                 loss = process_angle_and_loss(outputs, label, pred_angles, angles)
             # Backward and update
             train_loss += loss.item()
-            optimizer.zero_grad()
+
             loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), max_norm= 5.)
-            optimizer.step()
-            scheduler.step()
+            if i % every_step_update == 0 or i == len(train_loader):
+                nn.utils.clip_grad_norm_(model.parameters(), max_norm= 5.)
+                optimizer.step()
+                optimizer.zero_grad(set_to_none=True)
+                # warm up step
+                scheduler.step()
             del loss
   
         # Recording Epoch loss with tensorboard
@@ -269,7 +272,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                                 scalar_value=float(test_NME_loss), 
                                 global_step=epoch)
         # Scheduler steping
-        scheduler.step(val_NME_loss)
+        #scheduler.step(val_NME_loss)
 
         # Display the results
         end_time = time.time()
