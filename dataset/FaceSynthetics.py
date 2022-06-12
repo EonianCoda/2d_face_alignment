@@ -194,7 +194,7 @@ class Heatmap_converter(object):
         self.pad_w = window_size // 2
         self.sigma = sigma
         self.bg_negative = bg_negative
-        self.bg_value = -0.2
+        self.bg_value = -0.05
         self.fg_ratio = 0.2 
         self._generate_gaussian_kernel()
 
