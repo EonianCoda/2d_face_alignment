@@ -121,7 +121,7 @@ class FAN(nn.Module):
         # for m in self.modules():
         #     if isinstance(m, HPM_ConvBlock):
         #         for name, x in m.named_modules():
-        #             if name == "bn3":
+        #             if name == "bn1" or name == "bn2" or name == "bn3":
         #                 count += 1
         #                 x.weight.data.zero_()
         # print("count = ", count)
