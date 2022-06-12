@@ -185,6 +185,7 @@ def main():
     print(f"Weight standardization(WS) = {cfg['use_ws']}")
     print(f"Group normalization(GN) = {cfg['use_gn']}")
     print(f"Backgroud negative = {cfg['bg_negative']}")
+    print(f"Batch Size = {cfg['batch_size']}")
 
 
     

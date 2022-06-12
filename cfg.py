@@ -6,14 +6,14 @@ cfg = {
                 2:"smoothL1",
                 3:"wing_loss",
                 4:"adaptive_wing_loss",
-                5:"weighted_L2"},
-    'weight': 2, # For weighted L2
+                5:"weighted_L2",
+                6:"angle_weigted_L2"},
+    'weight': 2, # For weighted L2 and angle weighted L2
     ### Data Balance ###
-    'balance_data': True,
+    'balance_data': False,
     
     ### Scheduler setting ###
-    # 'scheduler_type': 1,  # 0: ReduceLROnPlateau, 1: Warmup_ReduceLROnPlateau 
-    'warm_step': 2000,   # If scheduler == 1, then use warm_epoch arg
+    'warm_step': 2000,   
     'milestones': [],
     'patience': 3,
     ### Optimizer ###

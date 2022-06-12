@@ -7,13 +7,11 @@ from model.blocks import CoordConv
 import math
 
 class AuxiliaryNet(nn.Module):
-    def __init__(self, input_channels, nums_class=3, activation=nn.ReLU, first_conv_stride=2):
+    def __init__(self, input_channels, nums_class=3, activation=nn.ReLU):
         super(AuxiliaryNet, self).__init__()
         self.input_channels = input_channels
-        # self.num_channels = [512, 512, 512, 512, 1024]
-        self.num_channels = [256, 256, 256, 256, 512]
-        self.conv1 = nn.Conv2d(self.input_channels, self.num_channels[0], kernel_size=3, stride=first_conv_stride,
-                               padding=1)
+        self.num_channels = [256, 256, 64, 256, 64]
+        self.conv1 = nn.Conv2d(self.input_channels, self.num_channels[0], kernel_size=3, stride=2, padding=1)
         self.bn1 = nn.BatchNorm2d(self.num_channels[0])
 
         self.conv2 = nn.Conv2d(self.num_channels[0], self.num_channels[1], kernel_size=3, stride=1, padding=1)
@@ -33,18 +31,31 @@ class AuxiliaryNet(nn.Module):
         self.init_params()
 
     def init_params(self):
+        
         for m in self.modules():
+            # if isinstance(m, nn.Conv2d):
+            #     nn.init.kaiming_normal_(m.weight, mode='fan_out')
+            #     if m.bias is not None:
+            #         nn.init.constant_(m.bias, 0)
+            # elif isinstance(m, nn.BatchNorm2d):
+            #     nn.init.constant_(m.weight, 1)
+            #     nn.init.constant_(m.bias, 0)
+            # elif isinstance(m, nn.Linear):
+            #     nn.init.normal_(m.weight, std=0.01)
+            #     if m.bias is not None:
+            #         nn.init.constant_(m.bias, 0)
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out')
+                #print(m.weight.size())
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
                 if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
+                    m.bias.data.zero_()
             elif isinstance(m, nn.BatchNorm2d):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
             elif isinstance(m, nn.Linear):
-                nn.init.normal_(m.weight, std=0.01)
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
+                m.weight.data.normal_(0, 0.01)
+                m.bias.data.zero_()
 
     def forward(self, input):
 

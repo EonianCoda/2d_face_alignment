@@ -102,15 +102,15 @@ def process_boundary(loss_type:str, criterion, outputs:torch.Tensor, boundary:to
 
     return loss
 
-def process_angle_and_loss(preds:torch.Tensor, labels:torch.Tensor, pred_angles, gt_angles):
-
+def process_angle_and_loss(preds:torch.Tensor, labels:torch.Tensor, pred_angles:torch.Tensor, gt_angles:torch.Tensor):
     loss = 0
-    weight = torch.sum(1 - torch.cos(gt_angles), axis=1)
-    num_target = (labels != 0).sum()
-    # Angle loss
-    for pred, pred_angle in zip(preds, pred_angles):
-        loss += nn.SmoothL1Loss()(pred_angle, gt_angles)
-        loss += (((pred - labels) ** 2).sum(dim=(-1,-2,-3)) * weight).sum() / num_target
+    # Calculate weight
+    weights = 1 - torch.cos(torch.abs(gt_angles - pred_angles))
+    weights = torch.sum(weights, 1) / 3 + 1 # shape = (bs,)
+    # Heatmap loss
+    num_target = (labels > 0).sum()
+    for pred in preds:
+        loss += (((pred - labels) ** 2).sum(dim=(-1,-2,-3)) * weights).sum() / num_target
     return loss
 
 def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, 
