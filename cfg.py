@@ -13,8 +13,10 @@ cfg = {
     'balance_data': False,
     
     ### Scheduler setting ###
-    'warm_step': 2000,   
+    'warm_step': 2000,
+    'lr':1e-4,
     'milestones': [],
+    'milestones_lr': [],
     'patience': 3,
     ### Optimizer ###
     'weight_decay': 1e-6, # default = 1e-6
@@ -66,7 +68,6 @@ cfg = {
     ### Training hyperparameters ###
     'batch_size':8,
     'update_batch_size': 8,
-    'lr':1e-4,
     'epoch':20,
     ### training setting ##
     'train_annot':'./data/train_annot.pkl',

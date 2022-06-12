@@ -2,13 +2,14 @@
 import torch
 from torch.utils.data import DataLoader
 import torch.nn as nn
-from losses.weighted_L2 import Weighted_L2
+from torch.optim.lr_scheduler import LambdaLR
 # Model
 from model.tool import get_model
 from dataset.tool import get_train_val_dataset, get_test_dataset, get_train_val_dataset_balanced
 from utils.tool import fixed_seed, load_parameters, train
 from utils.scheduler import Warmup_MultiStepDecay
 from losses.wing_loss import Adaptive_Wing_Loss, Wing_Loss
+from losses.weighted_L2 import Weighted_L2
 from cfg import *
 
 import argparse
@@ -59,7 +60,7 @@ def main():
     epoch = cfg['epoch']
     seed = cfg['seed']
     lr = cfg['lr']
-    ### Scheduler Setting
+    ### Opitmizer Setting
     weight_decay = cfg['weight_decay']
     optimizer_type = cfg['optimizers'][cfg['optimizer_idx']]
     loss_type = cfg['losses'][cfg['loss_idx']]
@@ -141,13 +142,10 @@ def main():
         criterion = Weighted_L2(reduction="sum", weight=float(weight))
     
     # Scheduler
-    # if scheduler_type == 0:
-    #     scheduler = ReduceLROnPlateau(optimizer, patience=3, verbose=True)
-    # elif scheduler_type == 1:
     warm_step = cfg['warm_step']
     milestones = cfg['milestones']
-    #patience = cfg['patience']
-    scheduler = Warmup_MultiStepDecay(optimizer, warm_step, milestones=milestones)
+    milestones_lr = cfg['milestones_lr']
+    scheduler = LambdaLR(optimizer, Warmup_MultiStepDecay(lr, warm_step, milestones, milestones_lr)
     model = model.to(device)
     
     # Testing data

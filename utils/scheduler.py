@@ -1,53 +1,84 @@
-from torch.optim.lr_scheduler import _LRScheduler, ReduceLROnPlateau
-from torch.optim.lr_scheduler import MultiStepLR
+# from torch.optim.lr_scheduler import _LRScheduler, ReduceLROnPlateau, LambdaLR
+# from torch.optim.lr_scheduler import MultiStepLR
 import math
 
-def warm_up_ratio(cur_step:int, num_steps:int, rise_type="step"):
+def cal_warmup_ratio(cur_step:int, num_steps:int, rise_type="step"):
     if rise_type == "step":
-        step_length = num_steps / 20
+        step_length = num_steps / 10
         ratio = math.ceil(cur_step / step_length) / (num_steps / step_length)
         ratio = max(ratio, 0.5 / (num_steps / step_length))
         return ratio
     elif rise_type == "exp":
         ratio = 1.0 - math.exp((-1 * (cur_step + 1)) / num_steps)
         return ratio
-
-class Warmup_MultiStepDecay(_LRScheduler):
-    def __init__(self, optimizer, num_warm_steps, milestones=[]):
-        self.num_warm_steps = num_warm_steps
-        self.cur_step = 0
-        #self.milestones = milestones
-       
-        # No weight decay
-        if milestones == []:
-            self.after_scheduler = None
-        else:
-            if num_warm_steps > milestones[0]:
-                raise ValueError("Warm steps should less than milestone[0]")
-            self.milestones = []
-            for step in milestones:
-                self.milestones.append(step - num_warm_steps)
-
-            self.after_scheduler = MultiStepLR(optimizer, milestones=self.milestones, gamma=0.5)
-        super(Warmup_MultiStepDecay, self).__init__(optimizer)
+class Warmup_MultiStepDecay(object):
+    def __init__(self, base_lr:float, warm_steps:int, milestones=[], milestones_lr=[]):
+        self.warm_steps = warm_steps
+        self.base_lr = base_lr 
         
-    def get_lr(self) -> float:
-        if self.cur_step <= self.num_warm_steps:
-            ratio = warm_up_ratio(self.cur_step, self.num_warm_steps)
-            return [base_lr * ratio for base_lr in self.base_lrs]
-        else:
-            return self.after_scheduler.get_last_lr()
-    def _print_info(self):
-        for group_idx, lr in enumerate(self.get_lr()):
-            print("step {:4d}: Adjusting learning rate of group {} to {:4e}.".format(self.cur_step, group_idx, lr))
+        if milestones != [] and milestones_lr != []:
+            if len(milestones_lr) != len(milestones):
+                raise ValueError("Milestones_lr and milestones hould have same elements")
+            elif warm_steps > milestones[0]:
+                raise ValueError("Warm steps should less than milestone[0]")
 
-    def step(self):
-        if self.cur_step < self.num_warm_steps:
-            self.cur_step = 1 if self.cur_step == 0 else self.cur_step + 1
-            for param_group, lr in zip(self.optimizer.param_groups, self.get_lr()):
-                param_group['lr'] = lr
-        elif self.after_scheduler != None:
-            self.after_scheduler.step()
+            milestones.reverse()
+            self.milestones = [step - warm_steps for step in milestones]
+            milestones_lr.reverse()
+            self.milestones_lr = milestones_lr
+        else:
+            milestones = None
+            milestones_lr = None
+
+    def __call__(self, cur_step:int):
+        if cur_step <= self.warm_steps:
+            ratio = cal_warmup_ratio(cur_step, self.warm_steps)
+            base = self.base_lr / 200
+            interval = self.base_lr - base
+            return base + ratio * interval #self.base_lr * ratio
+        elif self.milestones != None:
+            for i, step in enumerate(self.milestones):
+                if cur_step >= step:
+                    return float(self.milestones_lr[i])
+        return self.base_lr
+
+
+# class Warmup_MultiStepDecay(_LRScheduler):
+#     def __init__(self, optimizer, num_warm_steps, milestones=[]):
+#         self.num_warm_steps = num_warm_steps
+#         self.cur_step = 0
+#         #self.milestones = milestones
+       
+#         # No weight decay
+#         if milestones == []:
+#             self.after_scheduler = None
+#         else:
+            
+#             self.milestones = []
+#             for step in milestones:
+#                 self.milestones.append(step - num_warm_steps)
+
+#             self.after_scheduler = MultiStepLR(optimizer, milestones=self.milestones, gamma=0.5)
+#         super(Warmup_MultiStepDecay, self).__init__(optimizer)
+    
+
+#     def get_lr(self) -> float:
+#         if self.cur_step <= self.num_warm_steps:
+#             ratio = cat_warmup_ratio(self.cur_step, self.num_warm_steps)
+#             return [base_lr * ratio for base_lr in self.base_lrs]
+#         else:
+#             return self.after_scheduler.get_last_lr()
+#     def _print_info(self):
+#         for group_idx, lr in enumerate(self.get_lr()):
+#             print("step {:4d}: Adjusting learning rate of group {} to {:4e}.".format(self.cur_step, group_idx, lr))
+
+#     def step(self):
+#         if self.cur_step < self.num_warm_steps:
+#             self.cur_step = 1 if self.cur_step == 0 else self.cur_step + 1
+#             for param_group, lr in zip(self.optimizer.param_groups, self.get_lr()):
+#                 param_group['lr'] = lr
+#         elif self.after_scheduler != None:
+#             self.after_scheduler.step()
 
 # class Warmup_ReduceLROnPlateau(_LRScheduler):
 #     def __init__(self, optimizer, num_warm_steps:int, patience=3, verbose=True):
@@ -66,7 +97,7 @@ class Warmup_MultiStepDecay(_LRScheduler):
 # # #            ratio = 1.0 - math.exp(-(self.last_step + 1) / self.num_warm_steps)
 # #             cur_ratio = math.ceil(self.last_step / self.ratio) / (self.num_warm_steps / self.ratio)
 # #             cur_ratio = max(cur_ratio, 0.5 / (self.num_warm_steps / self.ratio))
-#             ratio = warm_up_ratio(self.last_step, self.num_warm_steps)
+#             ratio = cat_warmup_ratio(self.last_step, self.num_warm_steps)
 #             return [base_lr * ratio for base_lr in self.base_lrs]
 #         else:
 #             return self.after_scheduler.get_last_lr()
