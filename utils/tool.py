@@ -102,7 +102,8 @@ def process_boundary(loss_type:str, criterion, outputs:torch.Tensor, boundary:to
 
     return loss
 
-def process_angle_and_loss(preds:torch.Tensor, labels:torch.Tensor, pred_angles:torch.Tensor, gt_angles:torch.Tensor):
+def process_angle_and_loss(loss_type:str, preds:torch.Tensor, labels:torch.Tensor, pred_angles:torch.Tensor, 
+                            gt_angles:torch.Tensor, weight_map:torch.Tensor=None, weight_on_weight_map:float=0.0):
     loss = 0
     # Calculate weight
     weights = []
@@ -112,8 +113,15 @@ def process_angle_and_loss(preds:torch.Tensor, labels:torch.Tensor, pred_angles:
         weights.append(w)
     # Heatmap loss
     num_target = (labels > 0).sum()
-    for pred, weight in zip(preds, weights):
-        loss += (((pred - labels) ** 2).sum(dim=(-1,-2,-3)) * weight).sum() / num_target
+    for pred, img_weight in zip(preds, weights):
+        if loss_type == "L2":
+            loss += (((pred - labels) ** 2).sum(dim=(-1,-2,-3)) * img_weight).sum() / num_target
+        elif loss_type == "weighted_L2":
+            if weight_map == None:
+                raise ValueError("When loss type = 'weighted L2', then weight map should not be None")
+            pixel_weight = weight_on_weight_map * (weight_map + 1)
+            loss += ((((pred - labels) ** 2) * pixel_weight).sum(dim=(-1,-2,-3)) * img_weight).sum() / num_target
+
     return loss
 
 def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, 
@@ -196,7 +204,13 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                     boundary_loss = process_boundary(loss_type, criterion, pred_boundary, boundary, weight_map)
                     loss += boundary_loss
             else:
-                loss = process_angle_and_loss(outputs, label, pred_angles, angles)
+                # L2
+                if not use_weight_map:
+                    loss = process_angle_and_loss(loss_type, outputs, label, pred_angles, angles)
+                # Weighted L2
+                elif use_weight_map:
+                    loss = process_angle_and_loss(loss_type, outputs, label, pred_angles, angles, weight_map=weight_map, weight_on_weight_map=criterion.weight)
+                    
             # Backward and update
             train_loss += loss.item()
 
