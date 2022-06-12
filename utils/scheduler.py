@@ -26,8 +26,8 @@ class Warmup_MultiStepDecay(object):
             milestones_lr.reverse()
             self.milestones_lr = milestones_lr
         else:
-            milestones = None
-            milestones_lr = None
+            self.milestones = None
+            self.milestones_lr = None
     def __call__(self, cur_step:int):
         if cur_step <= self.warm_steps:
             return cal_warmup_ratio(cur_step, self.warm_steps)
