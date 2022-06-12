@@ -145,7 +145,7 @@ def main():
     warm_step = cfg['warm_step']
     milestones = cfg['milestones']
     milestones_lr = cfg['milestones_lr']
-    scheduler = LambdaLR(optimizer, Warmup_MultiStepDecay(lr, warm_step, milestones, milestones_lr)
+    scheduler = LambdaLR(optimizer, Warmup_MultiStepDecay(lr, warm_step, milestones, milestones_lr))
     model = model.to(device)
     
     # Testing data

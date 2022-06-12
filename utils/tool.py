@@ -105,12 +105,15 @@ def process_boundary(loss_type:str, criterion, outputs:torch.Tensor, boundary:to
 def process_angle_and_loss(preds:torch.Tensor, labels:torch.Tensor, pred_angles:torch.Tensor, gt_angles:torch.Tensor):
     loss = 0
     # Calculate weight
-    weights = 1 - torch.cos(torch.abs(gt_angles - pred_angles))
-    weights = torch.sum(weights, 1) / 3 + 1 # shape = (bs,)
+    weights = []
+    for angles in pred_angles:
+        w = 1 - torch.cos(torch.abs(gt_angles - angles))
+        w = torch.sum(weights, 1) / 3 + 1 # shape = (bs,)
+        weights.append(w)
     # Heatmap loss
     num_target = (labels > 0).sum()
-    for pred in preds:
-        loss += (((pred - labels) ** 2).sum(dim=(-1,-2,-3)) * weights).sum() / num_target
+    for pred, weight in zip(preds, weights):
+        loss += (((pred - labels) ** 2).sum(dim=(-1,-2,-3)) * weight).sum() / num_target
     return loss
 
 def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, 
