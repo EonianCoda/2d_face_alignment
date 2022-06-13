@@ -157,8 +157,10 @@ class RandomNoise(object):
 class Transform(object):
     def __init__(self, is_train=True, aug_setting:dict=None):
         self.is_train = is_train
-        means = [0.485, 0.456, 0.406]
-        stds = [0.229, 0.224, 0.225]
+        # means = [0.485, 0.456, 0.406]
+        # stds = [0.229, 0.224, 0.225]
+        means = [0.37625597, 0.3449013, 0.31499814]
+        stds = [0.19227648, 0.17455443, 0.16341331]
         self.normalize = transforms.Normalize(means, stds)
         
         if self.is_train:
@@ -210,6 +212,8 @@ class Transform(object):
 
         if self.is_train and self.aug_setting['erasing']:
             sample = self.random_erasing(sample)
+        
+        sample['img'] = self.normalize(sample['img'])
         return sample
 
 

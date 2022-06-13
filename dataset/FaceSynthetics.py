@@ -454,10 +454,12 @@ class Predicting_FaceSynthetics(Dataset):
         super(Predicting_FaceSynthetics, self).__init__()
         self.data_root = data_root
         # transform
-        means = [0.485, 0.456, 0.406]
-        stds = [0.229, 0.224, 0.225]
-        self.transform =  transforms.Compose([transforms.ToTensor()])
-                                                #transforms.Normalize(means, stds)])
+        # means = [0.485, 0.456, 0.406]
+        # stds = [0.229, 0.224, 0.225]
+        means = [0.37625597, 0.3449013, 0.31499814]
+        stds = [0.19227648, 0.17455443, 0.16341331]
+        self.transform =  transforms.Compose([transforms.ToTensor()],
+                                            transforms.Normalize(means, stds)])
         # data
         self.images = images
 
