@@ -12,16 +12,16 @@ class HourGlassNet(nn.Module):
         self.depth = depth
         self.num_feats = num_feats
 
-        self.coordConv = CoordConvTh(x_dim=96, 
-                                    y_dim=96,
-                                    with_r=with_r, 
-                                    with_boundary=True,
-                                    in_channels=self.num_feats,
-                                    first_one=first_one,
-                                    out_channels=self.num_feats,
-                                    kernel_size=1,
-                                    stride=1, 
-                                    padding=0)
+        # self.coordConv = CoordConvTh(x_dim=96, 
+        #                             y_dim=96,
+        #                             with_r=with_r, 
+        #                             with_boundary=True,
+        #                             in_channels=self.num_feats,
+        #                             first_one=first_one,
+        #                             out_channels=self.num_feats,
+        #                             kernel_size=1,
+        #                             stride=1, 
+        #                             padding=0)
 
         self.attention_block = attention_block
         self.downsample = nn.MaxPool2d(kernel_size=2, stride=2)
@@ -65,8 +65,8 @@ class HourGlassNet(nn.Module):
         return x + residual
 
     def forward(self, x, heatmap):
-        x, last_channel = self.coordConv(x, heatmap)
-        return self._forward(x, 1), last_channel
+        #x, last_channel = self.coordConv(x, heatmap)
+        return self._forward(x, 1) #, last_channel
 
 class Boundary_FAN(nn.Module):
     """Facial Alignment network

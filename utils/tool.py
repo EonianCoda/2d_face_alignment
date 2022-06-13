@@ -111,7 +111,7 @@ def process_angle_and_loss(loss_type:str, preds:torch.Tensor, labels:torch.Tenso
     weights = []
     for angles in pred_angles:
         w = 1 - torch.cos(torch.abs(gt_angles - angles))
-        w = torch.sum(w, 1) / 3 + 1 # shape = (bs,)
+        w = torch.sum(w, 1) + 1 # shape = (bs,)
         weights.append(w)
     # Heatmap loss
     num_target = (labels > 0).sum()
