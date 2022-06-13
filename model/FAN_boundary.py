@@ -146,7 +146,7 @@ class Boundary_FAN(nn.Module):
         for stack_idx in range(1, self.num_HG + 1):
             if stack_idx != self.num_HG:
                 residual = x
-            x, boundary_channel = self._modules[f"HG{stack_idx}"](x, tmp_out)
+            x = self._modules[f"HG{stack_idx}"](x, tmp_out)
 
             x = self._modules[f"stack{stack_idx}_conv1"](x)
             x = self._modules[f"stack{stack_idx}_conv2"](x)

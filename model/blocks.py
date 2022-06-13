@@ -200,6 +200,7 @@ class HPM_ConvBlock(nn.Module):
         self.bn3 = nn.BatchNorm2d(planes // 4)
         self.conv3 = conv3x3(planes // 4, planes // 4)
 
+        # self.attention = CA_Block(planes, planes)
         self.relu = nn.ReLU(inplace=True)
         if inplanes != planes:
             self.shortcut = nn.Sequential(
@@ -226,6 +227,7 @@ class HPM_ConvBlock(nn.Module):
         out3 = self.conv3(out3)
 
         out3 = torch.cat([out1, out2, out3], axis=1)
+        # out3 = self.attention(out3)
         if self.shortcut != None:
             residual =  self.shortcut(residual)
         out3 += residual

@@ -19,7 +19,7 @@ def main():
     parser.add_argument('--plot_img', type=int, default=10)
     parser.add_argument('--show_index', action="store_false")
     parser.add_argument('--show_line', action="store_false")
-    parser.add_argument('--show_bad', action="store_true")
+    parser.add_argument('--show_bad', action="store_false")
     parser.add_argument('--bad_loss', type=float, default=1.85)
     args = parser.parse_args()
 
