@@ -458,7 +458,7 @@ class Predicting_FaceSynthetics(Dataset):
         # stds = [0.229, 0.224, 0.225]
         means = [0.37625597, 0.3449013, 0.31499814]
         stds = [0.19227648, 0.17455443, 0.16341331]
-        self.transform =  transforms.Compose([transforms.ToTensor()],
+        self.transform =  transforms.Compose([transforms.ToTensor(),
                                             transforms.Normalize(means, stds)])
         # data
         self.images = images
