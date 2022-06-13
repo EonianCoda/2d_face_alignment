@@ -213,7 +213,7 @@ class Transform(object):
         if self.is_train and self.aug_setting['erasing']:
             sample = self.random_erasing(sample)
         
-        sample['img'] = self.normalize(sample['img'])
+        # sample['img'] = self.normalize(sample['img'])
         return sample
 
 

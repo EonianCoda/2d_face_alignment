@@ -18,14 +18,15 @@ def shwo_img(img_path, label):
     plt.figure()
     plt.imshow(im)
 
-def pred_imgs(model, test_loader, device,fix_coord = False, add_boundary = False):
+def pred_imgs(model, test_loader, device,fix_coord = False, add_boundary = False, aux_net=False):
     model = model.to(device)
     preds = []
 
     for batch_idx, data in enumerate(tqdm(test_loader)):
         with torch.no_grad():
             data = data.to(device)
-            outputs = model(data)
+            if aux_net or add_boundary:
+                outputs, _ = model(data)
 
             pred = heatmap_to_landmark(outputs, fix_coord =fix_coord)
             
@@ -43,6 +44,7 @@ def main():
     data_path = f"./data/{args.type}"
     model_path = args.model_path
     add_boundary = cfg['add_boundary']
+    aux_net = cfg['Aux_net']
     fix_coord = cfg['fix_coord']
     batch_size = cfg['batch_size'] * 2
     test_set = get_pred_dataset(data_path)
@@ -56,6 +58,7 @@ def main():
                         test_loader=test_loader, 
                         device=device,
                         add_boundary=add_boundary,
+                        aux_net=aux_net,
                         fix_coord=fix_coord)
     images = test_set.images
 

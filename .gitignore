@@ -8,5 +8,6 @@ runs
 *.ipynb
 *.pt
 *.png
+*.jpg
 *.pkl
 old_runs

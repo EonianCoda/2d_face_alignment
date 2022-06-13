@@ -26,14 +26,13 @@ def fixed_seed(myseed:int):
         torch.cuda.manual_seed_all(myseed)
         torch.cuda.manual_seed(myseed)
 
-def load_parameters(model, path, optimizer=None, scheduler=None):
+def load_parameters(model, path, optimizer=None, epoch:int=0):
     print(f'Loading model parameters from {path}...')
     param = torch.load(path)
     model.load_state_dict(param)
 
-    if optimizer != None and scheduler!= None:
-        optimizer.load_state_dict(torch.load(os.path.join(f"./save/optimizer.pt")))
-        scheduler.load_state_dict(torch.load(os.path.join(f"./save/scheduler.pt")))
+    if optimizer != None:
+        optimizer.load_state_dict(torch.load(os.path.join(f"./save/optimizer_{epoch}.pt")))
 
     print("End of loading !!!")
 
@@ -87,18 +86,21 @@ def process_loss(loss_type:str, criterion, outputs:torch.Tensor, label:torch.Ten
 
 def process_boundary(loss_type:str, criterion, outputs:torch.Tensor, boundary:torch.Tensor, weight_map:torch.Tensor=None):
     loss = 0
-    if loss_type =="L2":
-        num_target = (boundary > 0).sum()
-        for output in outputs:
-            loss += criterion(output, boundary) / num_target
-    elif loss_type == "wing_loss":
-        for output in outputs:
-            loss += criterion(output, boundary)
-    elif loss_type == "weighted_L2" or loss_type == "adaptive_wing_loss":
-        if weight_map == None:
-            raise ValueError("Weight map cannot be None!")
-        for output in outputs:
-            loss += criterion(output, boundary, weight_map)
+    num_target = (boundary > 0).sum()
+    for output in outputs:
+        loss += nn.MSELoss(reduction="sum")(output, boundary) / num_target
+    # if loss_type =="L2":
+    #     num_target = (boundary > 0).sum()
+    #     for output in outputs:
+    #         loss += criterion(output, boundary) / num_target
+    # elif loss_type == "wing_loss":
+    #     for output in outputs:
+    #         loss += criterion(output, boundary)
+    # elif loss_type == "weighted_L2" or loss_type == "adaptive_wing_loss":
+    #     if weight_map == None:
+    #         raise ValueError("Weight map cannot be None!")
+    #     for output in outputs:
+    #         loss += criterion(output, boundary, weight_map)
 
     return loss
 
@@ -314,8 +316,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
         
         # Save model, scheduler and optimizer
         torch.save(model.state_dict(), os.path.join(save_path, f'{epoch}.pt'))
-        torch.save(optimizer.state_dict(), os.path.join(save_path, f'optimizer.pt'))
-        torch.save(scheduler.state_dict(), os.path.join(save_path, f'scheduler.pt'))
+        torch.save(optimizer.state_dict(), os.path.join(save_path, f'optimizer_{epoch}.pt'))
 
     
     print("End of training !!!")

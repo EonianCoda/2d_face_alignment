@@ -160,7 +160,11 @@ def main():
     if resume:
         if resume_model_path == "":
             raise ValueError("If resume == True, then resume model path cannot be empty")
-        load_parameters(model, resume_model_path, optimizer, scheduler)
+        load_parameters(model, resume_model_path, optimizer, epoch=resume_epoch)
+        scheduler.last_epoch = len(train_loader) * resume_epoch
+        optimizer.zero_grad(set_to_none=True)
+        optimizer.step()
+        scheduler.step()
 
 
     # Print training information
