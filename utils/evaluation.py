@@ -84,11 +84,14 @@ def heatmap_to_landmark(heatmap, max_diff=0.26, fix_coord=True):
                                                 [0.4421, 0.7214, 0.8494, 0.7214, 0.4421],
                                                 [0     , 0.4421, 0.5205, 0.4421, 0]])                                 
     kernel.weight.requires_grad = False
-    sum_heatmap = heatmap.clone()
-    sum_heatmap = kernel(sum_heatmap)
+    heatmap_temp = heatmap.clone()
 
-    lmy = torch.argmax(torch.max(sum_heatmap, dim=3)[0], dim=2) 
-    lmx = torch.argmax(torch.max(sum_heatmap, dim=2)[0], dim=2)
+    # sum_heatmap = heatmap.sum(dim=0)
+    # heatmap = torch.clamp(heatmap, max=1.0)
+    heatmap_temp = kernel(heatmap_temp)
+
+    lmy = torch.argmax(torch.max(heatmap_temp, dim=3)[0], dim=2) 
+    lmx = torch.argmax(torch.max(heatmap_temp, dim=2)[0], dim=2)
 
     # lmy = torch.argmax(torch.max(heatmap, dim=3)[0], dim=2) 
     # lmx = torch.argmax(torch.max(heatmap, dim=2)[0], dim=2)
@@ -184,9 +187,9 @@ def heatmap_to_landmark(heatmap, max_diff=0.26, fix_coord=True):
                     # bottom
                     bottom = hm[y+1 : min(y+3,h), x-1 : x+2].mean()
                     # X
-                    offsets[batch_i, class_i, 0] = min(((right - left) / center_prob), 1.0) * (1 / max_diff) * 2.0 
+                    offsets[batch_i, class_i, 0] = max(min(((right - left) / center_prob), 1.0), -1.0) * (1 / max_diff) * 2.0 
                     # Y
-                    offsets[batch_i, class_i, 1] = min(((bottom - top) / center_prob), 1.0) * (1 / max_diff) * 2.0
+                    offsets[batch_i, class_i, 1] = max(min(((bottom - top) / center_prob), 1.0), -1.0) * (1 / max_diff) * 2.0
 
                 else:
                     offsets[batch_i, class_i, 0] = 0

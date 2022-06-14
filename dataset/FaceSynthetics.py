@@ -259,13 +259,15 @@ class Heatmap_converter(object):
             # X coord
             max_x = int(max_coord[0])
             min_x = int(min_coord[0])
-            max_x = min(int(max_x * (1.0 + self.fg_ratio)), self.heatmap_size - 1)
-            min_x = max(int(min_x * (1.0 - self.fg_ratio)), 0)
+            offset_x = int(max_x * self.fg_ratio)
+            max_x = min(max_x + offset_x, self.heatmap_size)
+            min_x = max(min_x - offset_x, 0)
             # Y coord
             max_y = int(max_coord[1])
             min_y = int(min_coord[1])
-            max_y = min(int(max_y * (1.0 + self.fg_ratio)), self.heatmap_size - 1)
-            min_y = max(int(min_y * (1.0 - self.fg_ratio)), 0)
+            offset_y = int(max_y * self.fg_ratio)
+            max_y = min(max_y + offset_y, self.heatmap_size)
+            min_y = max(min_y - offset_y, 0)
             heatmap[:, min_y: max_y, min_x: max_x] = 0.0
         else:
             heatmap = torch.zeros((label.shape[0], self.heatmap_size, self.heatmap_size)).float()

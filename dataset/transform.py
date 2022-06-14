@@ -18,15 +18,17 @@ class RandomErasing(object):
         max_coord, _ = sample['label'].max(dim=0)
         min_coord, _ = sample['label'].min(dim=0)
         # X coord
-        max_x = int(max_coord[1])
-        min_x = int(min_coord[1])
-        max_x = min(int(max_x * 1.05), w)
-        min_x = max(int(min_x * 0.95), 0)
+        max_x = int(max_coord[0])
+        min_x = int(min_coord[0])
+        offset_x = int(max_x * 0.1)
+        max_x = min(max_x + offset_x, w)
+        min_x = max(min_x - offset_x, 0)
         # Y coord
-        max_y = int(max_coord[0])
-        min_y = int(min_coord[0])
-        max_y = min(int(max_y * 1.05), h)
-        min_y = max(int(min_y * 0.95), 0)
+        max_y = int(max_coord[1])
+        min_y = int(min_coord[1])
+        offset_y = int(max_y * 0.1)
+        max_y = min(max_y + offset_y, h)
+        min_y = max(min_y - offset_y, 0)
         sample['img'][...,min_y : max_y, min_x: max_x] = self.earser(sample['img'][...,min_y : max_y, min_x: max_x])
        
         return sample
@@ -127,7 +129,7 @@ class RandomHorizontalFlip(object):
 
             sample['img'] = F.hflip(sample['img']) #transforms.RandomHorizontalFlip(1.0)(img)
             # Flip x coordinate
-            label[:, 0] = (h - 1) - label[:, 0]
+            label[:, 0] = (w - 1) - label[:, 0]
             if self.do_mapping:
                 tmp = label[self.mapping[1], ...].clone()
                 label[self.mapping[1], ...] = label[self.mapping[0], ...]
