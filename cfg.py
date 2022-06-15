@@ -77,5 +77,5 @@ cfg = {
     'test_annot':'./data/val_annot.pkl',
     'test_data_root':'./data/val',
     
-    'seed': 1206,
+    'seed': 815,
 }
