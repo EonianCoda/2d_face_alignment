@@ -5,10 +5,10 @@ import torch.nn as nn
 from torch.optim.lr_scheduler import LambdaLR
 # Model
 from model.tool import get_model
-from dataset.tool import get_train_val_dataset, get_test_dataset, get_train_val_dataset_balanced
+from dataset.tool import get_train_val_dataset, get_test_dataset
 from utils.tool import fixed_seed, load_parameters, train
 from utils.scheduler import Warmup_MultiStepDecay
-from losses.wing_loss import Adaptive_Wing_Loss, Wing_Loss
+from losses.wing_loss import Adaptive_Wing_Loss
 from losses.weighted_L2 import Weighted_L2
 from cfg import *
 
@@ -136,17 +136,13 @@ def main():
     # Print training information
     print("Start training!!\n")
     print(f"Loss type = {loss_type}")
-    print(f"Optimizer type = {optimizer_type}")
     print(f"Length of training dataloader = {len(train_loader)}")
     print(f"Attention Block = {cfg['attention_blocks'][cfg['attention_block_idx']]}")
     print(f"Fix coord = {fix_coord}")
     print(f"Use CoordConv = {cfg['use_CoordConv']}")
     print(f"With_r = {cfg['with_r']}")
     print(f"Add CoordConv inHG = {cfg['add_CoordConv_inHG']}")
-    print(f"Output CoordConv = {cfg['output_CoordConv']}")
-    print("Aug setting = ", aug_setting)
-    print(f"Weight standardization(WS) = {cfg['use_ws']}")
-    print(f"Group normalization(GN) = {cfg['use_gn']}")
+    print(f"Aug setting = {aug_setting}")
     print(f"Backgroud negative = {cfg['bg_negative']}")
     print(f"Batch Size = {cfg['batch_size']}")
 
@@ -156,7 +152,6 @@ def main():
     aug = " ".join(aug)
     loss_type = cfg['losses'][cfg['loss_idx']]
     train_hyp = {'loss_type': loss_type,
-                'optimizer': cfg['optimizers'][cfg['optimizer_idx']],
                 'use_weight_map': (loss_type == "weighted_L2") or (loss_type == "adaptive_wing_loss"),
                 'lr': cfg['lr'], 
                 'use_image_ratio': use_image_ratio,
@@ -169,8 +164,6 @@ def main():
                 'HG_depth': cfg['HG_depth'],
                 'num_feats': cfg['num_feats'],
                 'use_CoordConv':cfg['use_CoordConv'],
-                'use_ws':cfg['use_ws'],
-                'use_gn':cfg['use_gn'],
                 'with_r': cfg['with_r'],
                 'add_CoordConv_inHG':cfg['add_CoordConv_inHG'],
                 'attention_block' : cfg['attention_blocks'][cfg['attention_block_idx']]}
