@@ -1,44 +1,28 @@
 cfg = {
     ### Loss type ###  
-    'loss_idx': 0,
+    'loss_idx': 2,
     'losses': {0:"L2",
-                1:"L1",
-                2:"smoothL1",
-                3:"wing_loss",
-                4:"adaptive_wing_loss",
-                5:"weighted_L2",
-                6:"angle_weigted_L2"},
-    'weight': 2, # For weighted L2 and angle weighted L2
-    ### Data Balance ###
-    'balance_data': False,
+                1:"adaptive_wing_loss",
+                2:"weighted_L2"},
+    'weight': 2, # For weighted L2 and adaptive_wing_loss
     
     ### Scheduler setting ###
     'warm_step': 2000,
     'lr':1e-4,
-    'milestones': [],
-    'milestones_lr': [],
-    'patience': 3,
+    'milestones': [60000, 120000],
+    'milestones_lr': [5e-5, 2e-5],
     ### Optimizer ###
-    'weight_decay': 1e-6, # default = 1e-6
+    'weight_decay': 1e-6,
     ### Model arichitecture ###
-    'Aux_net': False,
-    'SD': False, # stochastic dropout
-    'SD_start_epoch': 0, # when stochastic dropout starts
     'num_HG': 2,
     'HG_depth':4,
     'num_feats':128,
     'fix_coord': True,
-    'bg_negative': False, # if fix_coord == True, then this arg is useless.
-    # Boundary net
-    'add_boundary': False,
+    'bg_negative': False,
     # For coordinate conv
-    'use_CoordConv': True,  # if addBoundary == True, then this arg is useless.
+    'use_CoordConv': True,
     'with_r': False,
-    'add_CoordConv_inHG': False,  # if addBoundary == True, then this arg is useless.
-    'output_CoordConv': False, # only for origin FAN
-    # For weight standarization
-    'use_ws': False, # weight standardization
-    'use_gn': False, # use group normalization instead of batch normalization
+    'add_CoordConv_inHG': False,
     ### Attention Block ###
     'attention_block_idx': 2,
     'attention_blocks': {0: "None",
@@ -46,36 +30,25 @@ cfg = {
                         2: "CA_Block"},
 
     ### Augumentation Setting ###
-    'aug_setting':{'flip': False,
+    'aug_setting':{'flip': True,
                 'rotation': True,
                 'noise': False,
-                'gaussianBlur': False,
-                'colorJitter': False,
-                'padding': False,
-                'erasing': False,
-                'grayscale': False},                    
-    ### Optimizer Type ###  
-    'optimizer_idx': 0,
-    'optimizers': {0: "RMSprop",
-                    1: "SGD",
-                    2: "Adam",
-                    3: "AdamW"},
-    ### Resdiual Block ###
-    'resBlock_idx': 0,
-    'resBlocks': {0: "HPM_ConvBlock",
-                1: "Bottleneck",
-                2: "InvertedResidual"},
+                'gaussianBlur': True,
+                'colorJitter': True,
+                'padding': True,
+                'erasing': True,
+                'grayscale': False},
     ### Training hyperparameters ###
     'batch_size':8,
     'update_batch_size': 8,
     'epoch':20,
     ### training setting ##
-    'train_annot':'./data/train_annot.pkl',
-    'train_data_root':'./data/train',
+    'train_annot':'../data/synthetics_train/annot.pkl',
+    'train_data_root':'../data/synthetics_train',
     'split_ratio': 0.9,
-    ### testing data ##
-    'test_annot':'./data/val_annot.pkl',
-    'test_data_root':'./data/val',
+    ### Validating data ##
+    'val_annot':'../data/aflw_val/annot.pkl',
+    'val_data_root':'../data/aflw_val',
     
-    'seed': 815,
+    'seed': 1206,
 }

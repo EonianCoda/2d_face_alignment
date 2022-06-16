@@ -36,7 +36,7 @@ def load_parameters(model, path, optimizer=None, epoch:int=0):
 
     print("End of loading !!!")
 
-def val(model, test_loader, device, fix_coord=False, add_boundary=False):
+def val(model, test_loader, device, fix_coord=False):
     print("Starting Validation....")
     
     model = model.to(device)
@@ -51,11 +51,7 @@ def val(model, test_loader, device, fix_coord=False, add_boundary=False):
             img, gt_label = sample['img'], sample['gt_label']
             img = img.to(device)
 
-            if add_boundary:
-                outputs, _ = model(img)
-            else:
-                outputs = model(img)
-
+            outputs = model(img)
             pred = heatmap_to_landmark(outputs,fix_coord=fix_coord)
             pred_loss, pred_loss_68 = NME(pred, gt_label, average=False, return_68=True)
             num_data += img.shape[0]
@@ -68,69 +64,23 @@ def val(model, test_loader, device, fix_coord=False, add_boundary=False):
 
 def process_loss(loss_type:str, criterion, outputs:torch.Tensor, label:torch.Tensor, weight_map:torch.Tensor=None):
     loss = 0
+    num_target = (label > 0).sum()  
     if loss_type =="L2":
-        num_target = (label > 0).sum()
         for output in outputs:
             loss += criterion(output, label) / num_target
-    elif loss_type == "wing_loss":
-        for output in outputs:
-            loss += criterion(output, label)
     elif loss_type == "weighted_L2" or loss_type == "adaptive_wing_loss":
         if weight_map == None:
             raise ValueError("Weight map cannot be None!")
-        num_target = (label > 0).sum()  
         for output in outputs:
             loss += criterion(output, label, weight_map) / num_target
 
     return loss
 
-def process_boundary(loss_type:str, criterion, outputs:torch.Tensor, boundary:torch.Tensor, weight_map:torch.Tensor=None):
-    loss = 0
-    num_target = (boundary > 0).sum()
-    for output in outputs:
-        loss += nn.MSELoss(reduction="sum")(output, boundary) / num_target
-    # if loss_type =="L2":
-    #     num_target = (boundary > 0).sum()
-    #     for output in outputs:
-    #         loss += criterion(output, boundary) / num_target
-    # elif loss_type == "wing_loss":
-    #     for output in outputs:
-    #         loss += criterion(output, boundary)
-    # elif loss_type == "weighted_L2" or loss_type == "adaptive_wing_loss":
-    #     if weight_map == None:
-    #         raise ValueError("Weight map cannot be None!")
-    #     for output in outputs:
-    #         loss += criterion(output, boundary, weight_map)
-
-    return loss
-
-def process_angle_and_loss(loss_type:str, preds:torch.Tensor, labels:torch.Tensor, pred_angles:torch.Tensor, 
-                            gt_angles:torch.Tensor, weight_map:torch.Tensor=None, weight_on_weight_map:float=0.0):
-    loss = 0
-    # Calculate weight
-    weights = []
-    for angles in pred_angles:
-        w = 1 - torch.cos(torch.abs(gt_angles - angles))
-        w = torch.sum(w, 1) + 1 # shape = (bs,)
-        weights.append(w)
-    # Heatmap loss
-    num_target = (labels > 0).sum()
-    for pred, img_weight in zip(preds, weights):
-        if loss_type == "L2":
-            loss += (((pred - labels) ** 2).sum(dim=(-1,-2,-3)) * img_weight).sum() / num_target
-        elif loss_type == "weighted_L2":
-            if weight_map == None:
-                raise ValueError("When loss type = 'weighted L2', then weight map should not be None")
-            pixel_weight = weight_on_weight_map * (weight_map + 1)
-            loss += ((((pred - labels) ** 2) * pixel_weight).sum(dim=(-1,-2,-3)) * img_weight).sum() / num_target
-
-    return loss
 
 def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str, device, criterion, scheduler, optimizer, 
-        loss_type:str, exp_name="", train_hyp=dict(), resume_epoch=-1,fix_coord=False, SD=False, SD_start_epoch=0,
-        add_boundary=False, aux_net=False, every_step_update=1):
+        loss_type:str, exp_name="", train_hyp=dict(), resume_epoch=-1, fix_coord=False, every_step_update=1):
     start_train = time.time()
-    # Create writerr for recording loss
+    # Create writer for recording loss
     if exp_name == "":
         writer = SummaryWriter()
     else:
@@ -149,7 +99,7 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
 
     use_weight_map = (loss_type == "weighted_L2") or (loss_type == "adaptive_wing_loss")
 
-    # Set start epoch and end epoch
+    # Resume train or not
     if resume_epoch != -1:
         print("Resume training!!")
         start_epoch = resume_epoch
@@ -160,13 +110,8 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
 
     # Starting training
     for epoch in range(start_epoch, end_epoch):
-        if SD and SD_start_epoch == epoch:
-            print("Starting Dropping !!")
-            model.start_drop(True)
         print(f'epoch = {epoch}')
         start_time = time.time()
-
-
         # Record learning rate
         writer.add_scalar(tag="train/learning_rate",
                             scalar_value=float(optimizer.param_groups[0]['lr']), 
@@ -177,42 +122,18 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
         train_loss = 0.0
         optimizer.zero_grad(set_to_none=True)
         for i, sample in enumerate(tqdm(train_loader)):
-            img = sample['img']
-            label = sample['label']
+            img, label = sample['img'], sample['label']
             # Add weight map
             weight_map = None
             if use_weight_map:
                 weight_map = sample['weight_map'].to(device)
-            # Add boundary
-            if add_boundary:
-                boundary = sample['boundary'].to(device)
-            # Aux Net
-            if aux_net:
-                angles = sample['euler_angle'].to(device)
 
             # Forward part
             img = img.to(device)
             label = label.to(device)
-            if add_boundary:
-                outputs, pred_boundary = model(img)
-            elif aux_net:
-                outputs, pred_angles = model(img)
-            else:
-                outputs = model(img)
+            outputs = model(img)
             # Calculate Loss
-            if not aux_net:
-                loss = process_loss(loss_type, criterion, outputs, label, weight_map)
-                if add_boundary:
-                    boundary_loss = process_boundary(loss_type, criterion, pred_boundary, boundary, weight_map)
-                    loss += boundary_loss
-            else:
-                # L2
-                if not use_weight_map:
-                    loss = process_angle_and_loss(loss_type, outputs, label, pred_angles, angles)
-                # Weighted L2
-                elif use_weight_map:
-                    loss = process_angle_and_loss(loss_type, outputs, label, pred_angles, angles, weight_map=weight_map, weight_on_weight_map=criterion.weight)
-                    
+            loss = process_loss(loss_type, criterion, outputs, label, weight_map)   
             # Backward and update
             train_loss += loss.item()
 
@@ -244,32 +165,10 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                 weight_map = None
                 if use_weight_map:
                     weight_map = sample['weight_map'].to(device)
-                # Add boundary
-                if add_boundary:
-                    boundary = sample['boundary'].to(device)
-                # Aux Net
-                # if aux_net:
-                #     angles = sample['euler_angle'].to(device)
-                # Forward part
                 img = img.to(device)
                 label = label.to(device)
-                if add_boundary:
-                    outputs, pred_boundary = model(img)
-                # elif aux_net:
-                #     outputs, pred_angles = model(img)
-                else:
-                    outputs = model(img)
-                # intermediate supervision
+                outputs = model(img)
                 loss = process_loss(loss_type, criterion, outputs, label, weight_map)
-                if add_boundary:
-                    boundary_loss = process_boundary(loss_type, criterion, pred_boundary, boundary, weight_map)
-                    loss += boundary_loss
-
-                
-                # loss = process_loss(loss_type, criterion, outputs, label, weight_map)
-                # if add_boundary:
-                #     boundary_loss = process_boundary(loss_type, criterion, pred_boundary, boundary, weight_map)
-                #     loss += boundary_loss
                 val_loss += loss.item()
                 # Calculate loss with groud truth label
                 pred_label = heatmap_to_landmark(outputs, fix_coord=fix_coord)
@@ -286,12 +185,10 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                             scalar_value=float(val_loss), 
                             global_step=epoch)
         # Testing part
-        test_NME_loss, test_NME_loss_68 = val(model, test_loader, device, fix_coord=fix_coord, add_boundary=add_boundary)
+        test_NME_loss, _ = val(model, test_loader, device, fix_coord=fix_coord)
         writer.add_scalar(tag="val/test_NME_loss",
                                 scalar_value=float(test_NME_loss), 
                                 global_step=epoch)
-        # Scheduler steping
-        #scheduler.step(val_NME_loss)
 
         # Display the results
         end_time = time.time()
@@ -304,7 +201,6 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
         print(formatted_str.format('Validating NME loss', val_NME_loss))
         print(formatted_str.format('Testing NME loss', test_NME_loss))
         print('='*24 + '\n')
-
 
         if test_NME_loss < best_test_NME_loss:
             best_test_NME_loss = test_NME_loss

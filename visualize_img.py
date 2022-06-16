@@ -14,21 +14,21 @@ from cfg import *
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', type=str)
-    parser.add_argument('--type', type=str, default="val")
+    parser.add_argument('--model_path', type=str, default="./save/best.pt")
     parser.add_argument('--plot_img', type=int, default=10)
+    parser.add_argument('--annot_path', type=str, default="./data/val_annot.pkl")
+    parser.add_argument('--data_path', type=str, default="./data/val")
     parser.add_argument('--show_index', action="store_false")
     parser.add_argument('--show_line', action="store_false")
     parser.add_argument('--show_bad', action="store_false")
-    parser.add_argument('--bad_loss', type=float, default=1.85)
+    parser.add_argument('--bad_loss', type=float, default=2.0)
     args = parser.parse_args()
 
     
     ### Data parameters ##
-    annot_path = f"./data/{args.type}_annot.pkl"
-    data_path = f"./data/{args.type}"
+    annot_path = args.annot_path
+    data_path = args.data_path
     model_path = args.model_path
-    add_boundary = cfg['add_boundary']
     ### image parameters ##
     show_line = args.show_line
     show_index = args.show_index
@@ -61,10 +61,7 @@ def main():
             sample = test_set.__getitem__(i)
             img, gt_label = sample['img'], sample['gt_label']
             img = img.to(device).unsqueeze(dim=0)
-            if add_boundary:
-                outputs, _ = model(img)
-            else:
-                outputs = model(img)
+            outputs = model(img)
             pred = heatmap_to_landmark(outputs, fix_coord=fix_coord)
           
             pred = pred[0]

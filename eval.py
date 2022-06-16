@@ -11,16 +11,15 @@ import numpy as np
 
 def main():
     parser = argparse.ArgumentParser()
-    # parser.add_argument('--num_HG', type=int, default=4)
-    parser.add_argument('--model_path', type=str)
-    parser.add_argument('--type', type=str, default="val")
+    parser.add_argument('--model_path', type=str, default="./save/best.pt")
+    parser.add_argument('--annot_path', type=str, default="./data/val_annot.pkl")
+    parser.add_argument('--data_path', type=str, default="./data/val")
+    # parser.add_argument('--type', type=str, default="val")
     args = parser.parse_args()
 
-    ### Boundary model
-    add_boundary = cfg['add_boundary']
     ### path ###
-    annot_path = f"./data/{args.type}_annot.pkl"
-    data_path = f"./data/{args.type}"
+    annot_path = args.annot_path
+    data_path = args.data_path
     model_path = args.model_path
 
     fix_coord = cfg['fix_coord']
@@ -35,7 +34,7 @@ def main():
     model = get_model(cfg)
 
     load_parameters(model, model_path)
-    test_NME_loss, test_NME_loss_68 = val(model, test_loader, device, fix_coord=fix_coord, add_boundary = add_boundary)
+    test_NME_loss, test_NME_loss_68 = val(model, test_loader, device, fix_coord=fix_coord)
     print(f"Average NME Loss : {test_NME_loss:.6f}")
     plot_loss_68(test_NME_loss_68)
     print(np.argsort(test_NME_loss_68))
