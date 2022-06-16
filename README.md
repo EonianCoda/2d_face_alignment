@@ -1,4 +1,4 @@
-# 2d_face_alignment
+# 2d_landmark_detection
 **#Computer Vision Final Project**<br>
 **#Microsoft Light-Weight Facial Landmark Prediction Challenge**<br>
 68-point facial landmarks prediction
