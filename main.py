@@ -52,9 +52,7 @@ def main():
     update_batch_size = cfg['update_batch_size']
     every_step_update = max(update_batch_size // batch_size, 1)
     split_ratio = cfg['split_ratio']
-    balance_data = cfg['balance_data']
     aug_setting = cfg['aug_setting']
-    add_boundary = cfg['add_boundary']
     bg_negative = cfg['bg_negative']
     ### Training hyperparameter ###
     epoch = cfg['epoch']
@@ -62,13 +60,9 @@ def main():
     lr = cfg['lr']
     ### Opitmizer Setting
     weight_decay = cfg['weight_decay']
-    optimizer_type = cfg['optimizers'][cfg['optimizer_idx']]
     loss_type = cfg['losses'][cfg['loss_idx']]
     use_weight_map = (loss_type == "weighted_L2") or (loss_type == "adaptive_wing_loss")
     fix_coord = cfg['fix_coord']
-    SD = cfg['SD']
-    SD_start_epoch = cfg['SD_start_epoch']
-    aux_net = cfg['Aux_net']
     ### Resume ###
     resume = args.resume
     resume_epoch = args.resume_epoch
@@ -84,30 +78,15 @@ def main():
     model = get_model(cfg)
     # Create train/val set
     print("Loading annotation...")
-    if balance_data:
-        print("Balance data !!! ")
-        train_set, val_set = get_train_val_dataset_balanced(data_root=train_data_root, 
-                                                annot_path=train_annot, 
-                                                train_size=split_ratio,
-                                                use_image_ratio=use_image_ratio,
-                                                use_weight_map=use_weight_map,
-                                                fix_coord=fix_coord,
-                                                add_angles=aux_net,
-                                                add_boundary=add_boundary,
-                                                bg_negative=bg_negative,
-                                                aug_setting=aug_setting)
-        
-    else:
-        train_set, val_set = get_train_val_dataset(data_root=train_data_root, 
-                                                annot_path=train_annot, 
-                                                train_size=split_ratio,
-                                                use_image_ratio=use_image_ratio,
-                                                use_weight_map=use_weight_map,
-                                                fix_coord=fix_coord,
-                                                add_angles=aux_net,
-                                                add_boundary=add_boundary,
-                                                bg_negative=bg_negative,
-                                                aug_setting=aug_setting)
+  
+    train_set, val_set = get_train_val_dataset(data_root=train_data_root, 
+                                            annot_path=train_annot, 
+                                            train_size=split_ratio,
+                                            use_image_ratio=use_image_ratio,
+                                            use_weight_map=use_weight_map,
+                                            fix_coord=fix_coord,
+                                            bg_negative=bg_negative,
+                                            aug_setting=aug_setting)
     print("End of Loading annotation!!!")
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers= 2, pin_memory=True, drop_last=True)
@@ -115,26 +94,13 @@ def main():
 
     params = add_weight_decay(model, weight_decay)
     # Optimizer
-    if optimizer_type == "RMSprop":
-        optimizer = torch.optim.RMSprop(params,
-                                        lr=lr,
-                                        momentum=0.9)       
-    elif optimizer_type == "SGD":
-        optimizer = torch.optim.SGD(params,
+    optimizer = torch.optim.RMSprop(params,
                                     lr=lr,
-                                    momentum=0.9,
-                                    nesterov=True)
-    elif optimizer_type == "Adam":
-        optimizer = torch.optim.Adam(params,
-                                    lr=lr)
-    elif optimizer_type == "AdamW":
-        optimizer = torch.optim.AdamW(params,
-                                    lr=lr)
+                                    momentum=0.9)       
+
     # loss_type
     if loss_type == "L2":
         criterion = nn.MSELoss(reduction="sum")
-    elif loss_type == "wing_loss":
-        criterion = Wing_Loss()
     elif loss_type == "adaptive_wing_loss":
         criterion = Adaptive_Wing_Loss()
     elif loss_type == "weighted_L2":
@@ -172,18 +138,13 @@ def main():
     print(f"Loss type = {loss_type}")
     print(f"Optimizer type = {optimizer_type}")
     print(f"Length of training dataloader = {len(train_loader)}")
-    print(f"Resdiual Block = {cfg['resBlocks'][cfg['resBlock_idx']]}")
     print(f"Attention Block = {cfg['attention_blocks'][cfg['attention_block_idx']]}")
     print(f"Fix coord = {fix_coord}")
     print(f"Use CoordConv = {cfg['use_CoordConv']}")
     print(f"With_r = {cfg['with_r']}")
     print(f"Add CoordConv inHG = {cfg['add_CoordConv_inHG']}")
     print(f"Output CoordConv = {cfg['output_CoordConv']}")
-    print(f"Add add_boundary = {cfg['add_boundary']}")
     print("Aug setting = ", aug_setting)
-    print(f"Balance_data = {balance_data}")
-    print(f"Stochastic Depth(SD) = {SD}")
-    print(f"Aux Net = {aux_net}")
     print(f"Weight standardization(WS) = {cfg['use_ws']}")
     print(f"Group normalization(GN) = {cfg['use_gn']}")
     print(f"Backgroud negative = {cfg['bg_negative']}")
@@ -200,12 +161,9 @@ def main():
                 'lr': cfg['lr'], 
                 'use_image_ratio': use_image_ratio,
                 'fix_coord': cfg['fix_coord'],
-                'balance_data': cfg['balance_data'],
                 'warm_step': cfg['warm_step'],
                 'augmentation': aug,
                 'seed': cfg['seed'],
-                'add_boundary': cfg['add_boundary'],
-                'SD': cfg['SD'],
                 # model architecture
                 'num_HG': cfg['num_HG'],
                 'HG_depth': cfg['HG_depth'],
@@ -215,8 +173,7 @@ def main():
                 'use_gn':cfg['use_gn'],
                 'with_r': cfg['with_r'],
                 'add_CoordConv_inHG':cfg['add_CoordConv_inHG'],
-                'attention_block' : cfg['attention_blocks'][cfg['attention_block_idx']],
-                'resBlock' : cfg['resBlocks'][cfg['resBlock_idx']]}
+                'attention_block' : cfg['attention_blocks'][cfg['attention_block_idx']]}
 
     
 
@@ -233,11 +190,7 @@ def main():
         loss_type=loss_type,
         exp_name=exp_name,
         fix_coord=fix_coord,
-        add_boundary=add_boundary,
-        SD=SD,
         every_step_update=every_step_update,
-        aux_net = aux_net,
-        SD_start_epoch=SD_start_epoch,
         train_hyp=train_hyp,
         resume_epoch=resume_epoch)
 

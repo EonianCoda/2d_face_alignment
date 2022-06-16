@@ -1,7 +1,6 @@
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from model.blocks import conv1x1, conv3x3
+from model.blocks import conv1x1
 from model.blocks import HPM_ConvBlock, SELayer, CA_Block
 from model.blocks import CoordConv
 import math
@@ -65,7 +64,7 @@ class FAN(nn.Module):
     """Facial Alignment network
     """
     def __init__(self, num_HG:int = 4, HG_depth:int = 4, num_feats:int = 256, num_classes:int = 68, resBlock=HPM_ConvBlock, 
-                attention_block=None,use_CoordConv=False, with_r=False, add_CoordConv_inHG=False, output_CoordConv=False):
+                attention_block=None, use_CoordConv=False, with_r=False, add_CoordConv_inHG=False):
         super(FAN, self).__init__()
         self.num_HG = num_HG # num of how many hourglass stack
         self.HG_dpeth = HG_depth # num of recursion in hourglass net
@@ -88,10 +87,7 @@ class FAN(nn.Module):
         for stack_idx in range(1, self.num_HG + 1):
             self.add_module(f"HG{stack_idx}", HourGlassNet(self.HG_dpeth, self.num_feats, resBlock=resBlock, attention_block=attention_block, add_CoordConv=add_CoordConv_inHG, with_r=with_r))
             self.add_module(f"stack{stack_idx}_conv1", resBlock(self.num_feats, self.num_feats))
-            if output_CoordConv:
-                self.add_module(f"stack{stack_idx}_conv2", CoordConv(self.num_feats, self.num_feats, kernel_size=1, stride=1, padding=0, bias=True))
-            else:
-                self.add_module(f"stack{stack_idx}_conv2", conv1x1(self.num_feats, self.num_feats, bias=True))
+            self.add_module(f"stack{stack_idx}_conv2", conv1x1(self.num_feats, self.num_feats, bias=True))
             self.add_module(f"stack{stack_idx}_bn1", nn.BatchNorm2d(int(self.num_feats)))
 
             self.add_module(f"stack{stack_idx}_conv_out", conv1x1(self.num_feats, self.num_classes, bias=True))
@@ -101,11 +97,7 @@ class FAN(nn.Module):
         self._weight_init()
     def _weight_init(self):
         for m in self.modules():
-            # if isinstance(m, nn.Conv2d):
-            #     nn.init.kaiming_normal_(m.weight, mode='fan_out', nonl
-            # inearity='relu')
             if isinstance(m, nn.Conv2d):
-                #print(m.weight.size())
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
                 if m.bias is not None:
@@ -116,15 +108,7 @@ class FAN(nn.Module):
             elif isinstance(m, nn.Linear):
                 m.weight.data.normal_(0, 0.01)
                 m.bias.data.zero_()
-        # Zero Gamma
-        # count = 0
-        # for m in self.modules():
-        #     if isinstance(m, HPM_ConvBlock):
-        #         for name, x in m.named_modules():
-        #             if name == "bn1" or name == "bn2" or name == "bn3":
-        #                 count += 1
-        #                 x.weight.data.zero_()
-        # print("count = ", count)
+
     def forward(self, x):
         outputs = []
         # Base part

@@ -1,19 +1,11 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 def conv3x3(inplanes:int, planes:int, stride=1, padding=1, bias=False, dilation=1):
     "3x3 convolution"
     inplanes = int(inplanes)
     planes = int(planes)
     return nn.Conv2d(inplanes, planes, kernel_size=3, dilation=dilation,
-                     stride=stride, padding=padding, bias=bias)
-
-def ws_conv3x3(inplanes:int, planes:int, stride=1, padding=1, bias=False, dilation=1):
-    "3x3 convolution with weight standardization"
-    inplanes = int(inplanes)
-    planes = int(planes)
-    return WS_conv2d(inplanes, planes, kernel_size=3, dilation=dilation,
                      stride=stride, padding=padding, bias=bias)
 
 
@@ -23,44 +15,6 @@ def conv1x1(inplanes:int, planes:int, bias=False):
     planes = int(planes)
     return nn.Conv2d(inplanes, planes, kernel_size=1,bias=bias,
                      stride=1, padding=0)
-
-def ws_conv1x1(inplanes:int, planes:int, bias=False):
-    "1x1 convolution with weight standardization"
-    inplanes = int(inplanes)
-    planes = int(planes)
-    return WS_conv2d(inplanes, planes, kernel_size=1,bias=bias,
-                     stride=1, padding=0)
-
-def depthwise_conv3x3(planes:int, stride=1, padding=1, bias=False, dilation=1):
-    "3x3 depthwise convolution "
-    return nn.Conv2d(planes, planes, kernel_size=3, dilation=dilation,
-                     stride=stride, padding=padding, bias=bias, groups=planes)
-
-def groupNorm(inplane:int):
-    # if group_type == 0:
-    #     groups = 32
-    # else:
-    groups = min(inplane // 16, 2)
-    return nn.GroupNorm(groups, inplane)
-
-
-class WS_conv2d(nn.Conv2d):
-    """Convolution 2d with weight standardization
-    """
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1,
-                 padding=0, dilation=1, groups=1, bias=True):
-        super(WS_conv2d, self).__init__(in_channels, out_channels, kernel_size, stride,
-                 padding, dilation, groups, bias)
-
-    def forward(self, x):
-        weight = self.weight
-        weight_mean = weight.mean(dim=1, keepdim=True).mean(dim=2,
-                                  keepdim=True).mean(dim=3, keepdim=True)
-        weight = weight - weight_mean
-        std = weight.view(weight.size(0), -1).std(dim=1).view(-1, 1, 1, 1) + 1e-5
-        weight = weight / std.expand_as(weight)
-        return F.conv2d(x, weight, self.bias, self.stride,
-                        self.padding, self.dilation, self.groups)
 
 class SELayer(nn.Module):
     def __init__(self, channel, reduction=4):
@@ -117,76 +71,6 @@ class CA_Block(nn.Module):
 
         return out
 
-class InvertedResidual(nn.Module):
-    def __init__(self, inp, oup, kernel_size=3, stride=1):
-        super(InvertedResidual, self).__init__()
-
-        self.identity = stride == 1 and inp == oup
-        hidden_dim = inp * 2
-      
-        self.conv = nn.Sequential(
-            # pw
-            nn.Conv2d(inp, hidden_dim, 1, 1, 0, bias=False),
-            nn.BatchNorm2d(hidden_dim),
-            nn.ReLU(inplace=True),
-            # dw
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size, stride, (kernel_size - 1) // 2, groups=hidden_dim, bias=False),
-            nn.BatchNorm2d(hidden_dim),
-            # Squeeze-and-Excite
-            SELayer(hidden_dim),
-            nn.ReLU(inplace=True),
-            # pw-linear
-            nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=False),
-            nn.BatchNorm2d(oup),
-        )
-
-    def forward(self, x):
-        if self.identity:
-            return x + self.conv(x)
-        else:
-            return self.conv(x)
-
-class Bottleneck(nn.Module):
-    def __init__(self, inplanes:int, planes:int):
-        super(Bottleneck, self).__init__()
-
-        self.conv1 = conv1x1(inplanes, planes // 2)
-        self.bn1 = nn.BatchNorm2d(planes // 2)
-        self.conv2 = conv3x3(planes // 2, planes // 2)
-        self.bn2 = nn.BatchNorm2d(planes // 2)
-        self.conv3 = conv1x1(planes // 2, planes)
-        self.bn3 = nn.BatchNorm2d(planes)
-        self.relu = nn.ReLU(inplace=True)
-
-        if inplanes != planes:
-            self.shortcut = nn.Sequential(
-                conv1x1(inplanes, planes),
-                nn.BatchNorm2d(planes)
-            )
-        else:
-            self.shortcut = None
-
-    def forward(self, x):
-        residual = x
-
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-
-        out = self.conv2(out)
-        out = self.bn2(out)
-        out = self.relu(out)
-
-        out = self.conv3(out)
-        out = self.bn3(out)
-
-        if self.shortcut != None:
-            residual = self.shortcut(residual)
-        out += residual
-        out = self.relu(out)
-
-        return out
-
 class HPM_ConvBlock(nn.Module):
     """Hierarchical, parallel and multi-scale block
     """
@@ -232,116 +116,6 @@ class HPM_ConvBlock(nn.Module):
         out3 += residual
 
         return out3
-
-class HPM_ConvBlock_SD(nn.Module):
-    """Hierarchical, parallel and multi-scale block with stochastic dropout
-    """
-    def __init__(self, inplanes:int, planes:int, prob=1.0):
-        super(HPM_ConvBlock_SD, self).__init__()
-        self.bn1 = nn.BatchNorm2d(inplanes)
-        self.conv1 = conv3x3(inplanes, planes // 2)
-        self.bn2 = nn.BatchNorm2d(planes // 2)
-        self.conv2 = conv3x3(planes // 2, planes // 4)
-        self.bn3 = nn.BatchNorm2d(planes // 4)
-        self.conv3 = conv3x3(planes // 4, planes // 4)
-
-        self.relu = nn.ReLU(inplace=True)
-        if inplanes != planes:
-            self.shortcut = nn.Sequential(
-                nn.BatchNorm2d(inplanes),
-                nn.ReLU(inplace=True),
-                conv1x1(inplanes, planes)
-            )
-        else:
-            self.shortcut = None
-
-        self.prob = torch.tensor(prob)
-        self.start_drop = False
-    def _forward(self, x):
-        
-        residual = x
-
-        out1 = self.bn1(x)
-        out1 = self.relu(out1)
-        out1 = self.conv1(out1)
-
-        out2 = self.bn2(out1)
-        out2 = self.relu(out2)
-        out2 = self.conv2(out2)
-
-        out3 = self.bn3(out2)
-        out3 = self.relu(out3)
-        out3 = self.conv3(out3)
-
-        out3 = torch.cat([out1, out2, out3], axis=1)
-        if self.shortcut != None:
-            residual =  self.shortcut(residual)
-        out3 += residual
-
-        return out3
-    def forward(self, x):
-        if self.training and self.start_drop:
-            active = torch.bernoulli(self.prob)
-            if active == 1:
-                return self._forward(x)
-            else:
-                if self.shortcut != None:
-                    return self.shortcut(x)
-                else:
-                    return x
-        else:
-            return self._forward(x)
-
-class HPM_ConvBlock_WSGN(nn.Module):
-    """Hierarchical, parallel and multi-scale block with weight standardization or group normalization
-    """
-    def __init__(self, inplanes:int, planes:int, use_ws=False, use_gn=False):
-
-        super(HPM_ConvBlock_WSGN, self).__init__()
-        # Set block
-        conv33 = ws_conv3x3 if use_ws else conv3x3
-        conv11 = ws_conv1x1 if use_ws else conv1x1
-        norm_block = groupNorm if use_gn else nn.BatchNorm2d 
-
-        self.norm1 = norm_block(inplanes)
-        self.conv1 =  conv33(inplanes, planes // 2)
-        self.norm2 = norm_block(planes // 2)
-        self.conv2 = conv33(planes // 2, planes // 4)
-        self.norm3 = norm_block(planes // 4)
-        self.conv3 = conv33(planes // 4, planes // 4)
-
-        self.relu = nn.ReLU(inplace=True)
-        if inplanes != planes:
-            self.shortcut = nn.Sequential(
-                norm_block(inplanes),
-                nn.ReLU(inplace=True),
-                conv11(inplanes, planes)
-            )
-        else:
-            self.shortcut = None
-
-    def forward(self, x):
-        residual = x
-
-        out1 = self.norm1(x)
-        out1 = self.relu(out1)
-        out1 = self.conv1(out1)
-
-        out2 = self.norm2(out1)
-        out2 = self.relu(out2)
-        out2 = self.conv2(out2)
-
-        out3 = self.norm3(out2)
-        out3 = self.relu(out3)
-        out3 = self.conv3(out3)
-
-        out3 = torch.cat([out1, out2, out3], axis=1)
-        if self.shortcut != None:
-            residual =  self.shortcut(residual)
-        out3 += residual
-
-        return out3
-
 class AddCoords(nn.Module):
 
     def __init__(self, with_r=False):
@@ -419,94 +193,3 @@ class CoordConv(nn.Module):
         ret = self.addcoords(x)
         ret = self.conv(ret)
         return ret
-
-class AddCoordsTh(nn.Module):
-    def __init__(self, x_dim=96, y_dim=96, with_r=False, with_boundary=False):
-        super(AddCoordsTh, self).__init__()
-        self.x_dim = x_dim
-        self.y_dim = y_dim
-        self.with_r = with_r
-        self.with_boundary = with_boundary
-
-    def forward(self, input_tensor, heatmap=None):
-        """
-        input_tensor: (batch, c, x_dim, y_dim)
-        """
-        batch_size_tensor = input_tensor.shape[0]
-
-        xx_ones = torch.ones([1, self.y_dim], dtype=torch.int32).cuda()
-        xx_ones = xx_ones.unsqueeze(-1)
-
-        xx_range = torch.arange(self.x_dim, dtype=torch.int32).unsqueeze(0).cuda()
-        xx_range = xx_range.unsqueeze(1)
-
-        xx_channel = torch.matmul(xx_ones.float(), xx_range.float())
-        xx_channel = xx_channel.unsqueeze(-1)
-
-
-        yy_ones = torch.ones([1, self.x_dim], dtype=torch.int32).cuda()
-        yy_ones = yy_ones.unsqueeze(1)
-
-        yy_range = torch.arange(self.y_dim, dtype=torch.int32).unsqueeze(0).cuda()
-        yy_range = yy_range.unsqueeze(-1)
-
-        yy_channel = torch.matmul(yy_range.float(), yy_ones.float())
-        yy_channel = yy_channel.unsqueeze(-1)
-
-        xx_channel = xx_channel.permute(0, 3, 2, 1)
-        yy_channel = yy_channel.permute(0, 3, 2, 1)
-
-        xx_channel = xx_channel / (self.x_dim - 1)
-        yy_channel = yy_channel / (self.y_dim - 1)
-
-        xx_channel = xx_channel * 2 - 1
-        yy_channel = yy_channel * 2 - 1
-
-        xx_channel = xx_channel.repeat(batch_size_tensor, 1, 1, 1)
-        yy_channel = yy_channel.repeat(batch_size_tensor, 1, 1, 1)
-
-        if self.with_boundary and type(heatmap) != type(None):
-            boundary_channel = torch.clamp(heatmap[:, -1:, :, :],
-                                        0.0, 1.0)
-
-            zero_tensor = torch.zeros_like(xx_channel)
-            xx_boundary_channel = torch.where(boundary_channel>0.05,
-                                              xx_channel, zero_tensor)
-            yy_boundary_channel = torch.where(boundary_channel>0.05,
-                                              yy_channel, zero_tensor)
-        if self.with_boundary and type(heatmap) != type(None):
-            xx_boundary_channel = xx_boundary_channel.cuda()
-            yy_boundary_channel = yy_boundary_channel.cuda()
-        ret = torch.cat([input_tensor, xx_channel, yy_channel], dim=1)
-
-
-        if self.with_r:
-            rr = torch.sqrt(torch.pow(xx_channel, 2) + torch.pow(yy_channel, 2))
-            rr = rr / torch.max(rr)
-            ret = torch.cat([ret, rr], dim=1)
-
-        if self.with_boundary and type(heatmap) != type(None):
-            ret = torch.cat([ret, xx_boundary_channel,
-                             yy_boundary_channel], dim=1)
-        return ret
-
-
-class CoordConvTh(nn.Module):
-    """CoordConv layer as in the paper."""
-    def __init__(self, x_dim, y_dim, with_r, with_boundary,
-                 in_channels, first_one=False, *args, **kwargs):
-        super(CoordConvTh, self).__init__()
-        self.addcoords = AddCoordsTh(x_dim=x_dim, y_dim=y_dim, with_r=with_r,
-                                    with_boundary=with_boundary)
-        in_channels += 2
-        if with_r:
-            in_channels += 1
-        if with_boundary and not first_one:
-            in_channels += 2
-        self.conv = nn.Conv2d(in_channels=in_channels, *args, **kwargs)
-
-    def forward(self, input_tensor, heatmap=None):
-        ret = self.addcoords(input_tensor, heatmap)
-        last_channel = ret[:, -2:, :, :]
-        ret = self.conv(ret)
-        return ret, last_channel

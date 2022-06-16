@@ -126,7 +126,7 @@ class RandomHorizontalFlip(object):
             label = sample['label']
             h, w = sample['img'].size
 
-            sample['img'] = F.hflip(sample['img']) #transforms.RandomHorizontalFlip(1.0)(img)
+            sample['img'] = F.hflip(sample['img'])
             # Flip x coordinate
             label[:, 0] = (w - 1) - label[:, 0]
             if self.do_mapping:
@@ -158,12 +158,6 @@ class RandomNoise(object):
 class Transform(object):
     def __init__(self, is_train=True, aug_setting:dict=None):
         self.is_train = is_train
-        # means = [0.485, 0.456, 0.406]
-        # stds = [0.229, 0.224, 0.225]
-        means = [0.37625597, 0.3449013, 0.31499814]
-        stds = [0.19227648, 0.17455443, 0.16341331]
-        self.normalize = transforms.Normalize(means, stds)
-        
         if self.is_train:
             if aug_setting == None:
                 raise ValueError("When is_train == 'True', aug setting cannot be None ")
@@ -178,43 +172,41 @@ class Transform(object):
             self.random_erasing = RandomErasing(1/3)
     def __call__(self, sample:dict):
         sample['label'] = sample['label'].clone()
-        # Random Padding
-        if self.is_train and self.aug_setting['padding']:
-            sample = self.random_padding(sample) 
-
-        # Random flip
-        if self.is_train and self.aug_setting['flip']:
-            sample = self.random_flip(sample)
-
-        # Random rotation
-        if self.is_train and self.aug_setting['rotation']:
-            sample = self.random_rotation(sample)
+        if self.is_train:
+            # Random Padding
+            if self.aug_setting['padding']:
+                sample = self.random_padding(sample) 
+            # Random flip
+            if self.aug_setting['flip']:
+                sample = self.random_flip(sample)
+            # Random rotation
+            if self.aug_setting['rotation']:
+                sample = self.random_rotation(sample)
 
         sample['img'] = transforms.ToTensor()(sample['img'])
 
         # Gaussian Blur
-        if self.is_train and self.aug_setting['gaussianBlur']:
-            if random.random() > 0.5:
-                sample['img'] = self.gaussian_blur(sample['img'])
+        if self.is_train:
+            if self.aug_setting['gaussianBlur']:
+                if random.random() > 0.5:
+                    sample['img'] = self.gaussian_blur(sample['img'])
+            # Color Jitter
+            if self.aug_setting['colorJitter']:
+                if random.random() > 0.5:
+                    sample['img'] = self.color_jitter(sample['img'])
+            # Random noise
+            if self.aug_setting['noise']:
+                sample = self.random_noise(sample)
+            # Grayscale
+            if self.aug_setting['grayscale']:
+                #prob = 2/3
+                if random.random() > 2/3:
+                    sample['img'] = self.gray_transform(sample['img'])
+            # Random Erasing
+            if self.is_train and self.aug_setting['erasing']:
+                sample = self.random_erasing(sample)
         
-        # Color Jitter
-        if self.is_train and self.aug_setting['colorJitter']:
-            if random.random() > 0.5:
-                sample['img'] = self.color_jitter(sample['img'])
-        
-        # Random noise
-        if self.is_train and self.aug_setting['noise']:
-            sample = self.random_noise(sample)
 
-        if self.is_train and self.aug_setting['grayscale']:
-            #prob = 2/3
-            if random.random() > 2/3:
-                sample['img'] = self.gray_transform(sample['img'])
-
-        if self.is_train and self.aug_setting['erasing']:
-            sample = self.random_erasing(sample)
-        
-        # sample['img'] = self.normalize(sample['img'])
         return sample
 
 

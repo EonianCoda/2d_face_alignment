@@ -11,8 +11,7 @@ import numpy as np
 
 def main():
     parser = argparse.ArgumentParser()
-    # parser.add_argument('--num_HG', type=int, default=4)
-    parser.add_argument('--model_path', type=str)
+    parser.add_argument('--model_path', type=str, default="./save/best.pt")
     parser.add_argument('--type', type=str, default="val")
     args = parser.parse_args()
 
