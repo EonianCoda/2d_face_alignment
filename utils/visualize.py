@@ -8,7 +8,9 @@ import torch.nn.functional as F
 
 
 def read_img(im_path:str):
-    return cv2.imread(im_path)
+    im = cv2.imread(im_path)
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+    return im
 
 def draw_point(im, coord:tuple, color:tuple, text:str=None):
     if text != None:

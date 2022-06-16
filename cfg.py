@@ -32,7 +32,7 @@ cfg = {
     # Boundary net
     'add_boundary': False,
     # For coordinate conv
-    'use_CoordConv': False,  # if addBoundary == True, then this arg is useless.
+    'use_CoordConv': True,  # if addBoundary == True, then this arg is useless.
     'with_r': False,
     'add_CoordConv_inHG': False,  # if addBoundary == True, then this arg is useless.
     'output_CoordConv': False, # only for origin FAN
