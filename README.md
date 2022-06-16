@@ -78,4 +78,3 @@ and you will get **solution.zip**
 4. Wang, Xinyao, Liefeng Bo, and Li Fuxin. "Adaptive wing loss for robust face alignment via heatmap regression." Proceedings of the IEEE/CVF international conference on computer vision. 2019. 
 5. Hu, J., Shen, L., and Sun, G. Squeeze-and-excitation networks. CVPR, 2018.
 6. Qibin Hou, Daquan Zhou, and Jiashi Feng. Coordinate attention for efficient mobile network design. arXiv preprint arXiv:2103.02907, 2021.
-
