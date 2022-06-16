@@ -4,9 +4,9 @@
 68-point facial landmarks prediction
 ## Environment
 ```
-python == 3.9.12
-torch == 1.11.0
-torchvision == 0.12.0
+python >= 3.9.12
+torch >= 1.11.0
+torchvision >= 0.12.0
 ```
 ### installation
 ```bash
