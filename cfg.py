@@ -43,12 +43,12 @@ cfg = {
     'update_batch_size': 8,
     'epoch':20,
     ### training setting ##
-    'train_annot':'./data/train_annot.pkl',
-    'train_data_root':'./data/train',
+    'train_annot':'../data/synthetics_train/annot.pkl',
+    'train_data_root':'../data/synthetics_train',
     'split_ratio': 0.9,
     ### testing data ##
-    'test_annot':'./data/val_annot.pkl',
-    'test_data_root':'./data/val',
+    'test_annot':'../data/aflw_val/annot.pkl',
+    'test_data_root':'../data/aflw_val',
     
     'seed': 815,
 }
