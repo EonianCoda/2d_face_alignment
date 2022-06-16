@@ -11,7 +11,6 @@ torchvision == 0.12.0
 ### installation
 ```bash
 git clone https://github.com/EonianCoda/2d_face_alignment.git
-git checkout clean_code
 pip3 install -r requirement
 ```
 ```bash
