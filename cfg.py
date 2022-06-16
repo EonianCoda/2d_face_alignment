@@ -50,5 +50,5 @@ cfg = {
     'val_annot':'../data/aflw_val/annot.pkl',
     'val_data_root':'../data/aflw_val',
     
-    'seed': 815,
+    'seed': 1206,
 }
