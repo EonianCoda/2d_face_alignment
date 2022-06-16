@@ -220,8 +220,9 @@ class FaceSynthetics(Dataset):
         #     img_path = os.path.join(self.data_root, self.images[idx])
         #     im = Image.open(img_path)
         # else:
-        im = self.img_data[idx]
-
+        #     im = self.img_data[idx]
+        img_path = os.path.join(self.data_root, self.images[idx])
+        im = Image.open(img_path)
         sample = {'img':im, 'label':self.labels[idx]}
         sample = self.transform(sample)
         if self.return_gt:
