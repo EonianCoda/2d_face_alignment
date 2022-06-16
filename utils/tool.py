@@ -165,7 +165,8 @@ def train(model, train_loader, val_loader, test_loader, epoch:int, save_path:str
                 weight_map = None
                 if use_weight_map:
                     weight_map = sample['weight_map'].to(device)
-              
+                img = img.to(device)
+                label = label.to(device)
                 outputs = model(img)
                 loss = process_loss(loss_type, criterion, outputs, label, weight_map)
                 val_loss += loss.item()
