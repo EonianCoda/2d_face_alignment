@@ -35,7 +35,7 @@ def main():
     parser.add_argument('--model_path', type=str, default="./save/best.pt")
     parser.add_argument('--data_path', default="./data/test")
     #parser.add_argument('--type', type=str, default="test")
-    parser.add_argument('--show_result', action="store_false")
+    parser.add_argument('--show_result', action="store_true")
     args = parser.parse_args()
     
     ### Parameters ###

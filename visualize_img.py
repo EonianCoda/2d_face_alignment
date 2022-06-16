@@ -14,7 +14,7 @@ from cfg import *
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', type=str)
+    parser.add_argument('--model_path', type=str, default="./save/best.pt")
     parser.add_argument('--plot_img', type=int, default=10)
     parser.add_argument('--annot_path', type=str, default="./data/val_annot.pkl")
     parser.add_argument('--data_path', type=str, default="./data/val")
