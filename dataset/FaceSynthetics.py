@@ -173,28 +173,28 @@ class FaceSynthetics(Dataset):
         self.labels= torch.tensor(labels)
         self.num_classes = len(self.labels[0])
         # For colab
-        try:
-            import google.colab
-            self.IN_COLAB = True
-            img_path = "./data/train_imgs.pkl"
-            img_data = "./data/train_data.pkl"
-            if self.IN_COLAB and os.path.isfile(img_path) and os.path.isfile(img_data):
-                import pickle
-                old_images = pickle.load(open(img_path,'rb'))
-                # Test if same
-                for a,b in zip(self.images, old_images):
-                    a = os.path.basename(a)
-                    if a != b:
-                        self.IN_COLAB = False
-                        break
-                del old_images
-                if self.IN_COLAB:
-                    self.img_data = pickle.load(open(img_data,'rb'))
-                    print("Success Loading cached data!")
-            else:
-                self.IN_COLAB = False
-        except:
-            self.IN_COLAB = False
+        # try:
+        #     import google.colab
+        #     self.IN_COLAB = True
+        #     img_path = "./data/train_imgs.pkl"
+        #     img_data = "./data/train_data.pkl"
+        #     if self.IN_COLAB and os.path.isfile(img_path) and os.path.isfile(img_data):
+        #         import pickle
+        #         old_images = pickle.load(open(img_path,'rb'))
+        #         # Test if same
+        #         for a,b in zip(self.images, old_images):
+        #             a = os.path.basename(a)
+        #             if a != b:
+        #                 self.IN_COLAB = False
+        #                 break
+        #         del old_images
+        #         if self.IN_COLAB:
+        #             self.img_data = pickle.load(open(img_data,'rb'))
+        #             print("Success Loading cached data!")
+        #     else:
+        #         self.IN_COLAB = False
+        # except:
+        #     self.IN_COLAB = False
 
         # heatmap converter
         if fix_coord:
@@ -215,12 +215,12 @@ class FaceSynthetics(Dataset):
         return weight_map
     def __getitem__(self, idx:int):
         # For colab
-        if not self.IN_COLAB:
-            # Read imagee
-            img_path = os.path.join(self.data_root, self.images[idx])
-            im = Image.open(img_path)
-        else:
-            im = self.img_data[idx]
+        # if not self.IN_COLAB:
+        #     # Read imagee
+        #     img_path = os.path.join(self.data_root, self.images[idx])
+        #     im = Image.open(img_path)
+        # else:
+        im = self.img_data[idx]
 
         sample = {'img':im, 'label':self.labels[idx]}
         sample = self.transform(sample)

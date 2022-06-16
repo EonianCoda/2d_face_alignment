@@ -98,7 +98,7 @@ class Heatmap_visualizer(object):
         heatmap = F.interpolate(heatmap, scale_factor=(4, 4), mode='nearest')[0]
         heatmap = heatmap.sum(dim=0)
         heatmap = torch.clamp(heatmap, max=1.0)
-
+        heatmap = torch.where(heatmap < 0.05, torch.zeros_like(heatmap), heatmap)
         im = to_numpy(im)
         if ax == None:
             plt.figure()

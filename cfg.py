@@ -1,6 +1,6 @@
 cfg = {
     ### Loss type ###  
-    'loss_idx': 0,
+    'loss_idx': 2,
     'losses': {0:"L2",
                 1:"adaptive_wing_loss",
                 2:"weighted_L2"},
@@ -9,8 +9,8 @@ cfg = {
     ### Scheduler setting ###
     'warm_step': 2000,
     'lr':1e-4,
-    'milestones': [],
-    'milestones_lr': [],
+    'milestones': [60000, 120000],
+    'milestones_lr': [5e-5, 2e-5],
     ### Optimizer ###
     'weight_decay': 1e-6,
     ### Model arichitecture ###
@@ -30,13 +30,13 @@ cfg = {
                         2: "CA_Block"},
 
     ### Augumentation Setting ###
-    'aug_setting':{'flip': False,
+    'aug_setting':{'flip': True,
                 'rotation': True,
                 'noise': False,
-                'gaussianBlur': False,
-                'colorJitter': False,
-                'padding': False,
-                'erasing': False,
+                'gaussianBlur': True,
+                'colorJitter': True,
+                'padding': True,
+                'erasing': True,
                 'grayscale': False},
     ### Training hyperparameters ###
     'batch_size':8,
@@ -46,9 +46,9 @@ cfg = {
     'train_annot':'../data/synthetics_train/annot.pkl',
     'train_data_root':'../data/synthetics_train',
     'split_ratio': 0.9,
-    ### testing data ##
-    'test_annot':'../data/aflw_val/annot.pkl',
-    'test_data_root':'../data/aflw_val',
+    ### Validating data ##
+    'val_annot':'../data/aflw_val/annot.pkl',
+    'val_data_root':'../data/aflw_val',
     
     'seed': 815,
 }

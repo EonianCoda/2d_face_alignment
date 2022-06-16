@@ -43,8 +43,8 @@ def main():
     ### data setting ###
     train_data_root = cfg['train_data_root']
     train_annot = cfg['train_annot']
-    test_data_root = cfg['test_data_root']
-    test_annot = cfg['test_annot']
+    val_data_root = cfg['val_data_root']
+    val_annot = cfg['val_annot']
     use_image_ratio = args.use_image_ratio
 
     ## Data setting ###
@@ -115,7 +115,7 @@ def main():
     model = model.to(device)
     
     # Testing data
-    test_set = get_test_dataset(test_data_root, test_annot)
+    test_set = get_test_dataset(val_data_root, val_annot)
     test_loader = DataLoader(test_set, batch_size=batch_size, num_workers= 2, pin_memory=True)
 
 

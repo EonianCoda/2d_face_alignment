@@ -12,12 +12,14 @@ import numpy as np
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', type=str, default="./save/best.pt")
-    parser.add_argument('--type', type=str, default="val")
+    parser.add_argument('--annot_path', type=str, default="./data/val_annot.pkl")
+    parser.add_argument('--data_path', type=str, default="./data/val")
+    # parser.add_argument('--type', type=str, default="val")
     args = parser.parse_args()
 
     ### path ###
-    annot_path = f"./data/{args.type}_annot.pkl"
-    data_path = f"./data/{args.type}"
+    annot_path = args.annot_path
+    data_path = args.data_path
     model_path = args.model_path
 
     fix_coord = cfg['fix_coord']

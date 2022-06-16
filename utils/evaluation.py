@@ -89,8 +89,27 @@ def heatmap_to_landmark(heatmap, max_diff=0.26, fix_coord=True):
 
                 else:
                     offsets[batch_i, class_i, 0] = 0
-        
+    else:
+        offsets = torch.zeros(bs, c, 2).float()
+        for batch_i in range(bs):
+            for class_i in range(c):
+                hm = heatmap[batch_i, class_i,...]
+                x, y = landmark[batch_i, class_i, 0], landmark[batch_i, class_i, 1]
+                center_prob = hm[y, x]
+                if x > 0 and  y > 0 and (x + 1) < w and (y + 1) < h:
+                    # X
+                    if hm[y, x-1] > hm[y, x+1]: 
+                        offsets[batch_i, class_i, 0] = -1
+                    else:
+                        offsets[batch_i, class_i, 0] = 1
+                    # Y
+                    if hm[y - 1, x] > hm[y + 1, x]:
+                        offsets[batch_i, class_i, 1] = -1
+                    else:
+                        offsets[batch_i, class_i, 1] = 1
+                else:
+                    offsets[batch_i, class_i, 0] = 0
     landmark = landmark.float()*4
-    if fix_coord:
-        landmark += offsets
+    #if fix_coord:
+    landmark += offsets
     return landmark
