@@ -4,12 +4,12 @@ cfg = {
     'losses': {0:"L2",
                 1:"adaptive_wing_loss",
                 2:"weighted_L2"},
-    'weight': 3, # For weighted L2 and adaptive_wing_loss
+    'weight': 2, # For weighted L2 and adaptive_wing_loss
     
     ### Scheduler setting ###
     'warm_step': 2000,
     'lr':1e-4,
-    'milestones': [60000, 120000],
+    'milestones': [80000, 120000],
     'milestones_lr': [5e-5, 2e-5],
     ### Optimizer ###
     'weight_decay': 1e-6,

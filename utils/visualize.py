@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
-
+from utils.convert_tool import to_tensor
 
 def read_img(im_path:str):
     im = cv2.imread(im_path)
@@ -89,6 +89,7 @@ class Heatmap_visualizer(object):
 
     def draw_heatmap(self, im, heatmap:torch.Tensor, color="red", ax=None):
         # Processing heatmap
+        heatmap = to_tensor(heatmap)
         if heatmap.is_cuda:
             heatmap = heatmap.detach().cpu()
         if heatmap.dim() == 3:
