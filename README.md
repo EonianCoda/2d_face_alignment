@@ -16,7 +16,7 @@ Pytorch
 ```bash
 conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
 ```
-## Usage
+## Step
 ### Change Data Path
 ```
 ├── 2d_landmark_detection
@@ -48,6 +48,18 @@ conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
         ....
     }
 ```
+### Training Model
+```bash
+python main.py <option>
+```
+### Generate Solution
+```bash
+python test.py <option>
+```
+Then you will get  **solution.zip**
+
+
+## Details
 ### Trainging
 Usuage：
 ```bash
