@@ -4,7 +4,7 @@ cfg = {
     'losses': {0:"L2",
                 1:"adaptive_wing_loss",
                 2:"weighted_L2"},
-    'weight': 2, # For weighted L2 and adaptive_wing_loss
+    'weight': 3, # For weighted L2 and adaptive_wing_loss
     
     ### Scheduler setting ###
     'warm_step': 2000,

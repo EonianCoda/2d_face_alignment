@@ -33,7 +33,7 @@ def pred_imgs(model, test_loader, device,fix_coord = False):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', type=str, default="./save/best.pt")
-    parser.add_argument('--data_path', default="./data/test")
+    parser.add_argument('--data_path', default="../aflw_test")
     #parser.add_argument('--type', type=str, default="test")
     parser.add_argument('--show_result', action="store_true")
     args = parser.parse_args()

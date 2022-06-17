@@ -12,8 +12,8 @@ import numpy as np
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', type=str, default="./save/best.pt")
-    parser.add_argument('--annot_path', type=str, default="./data/val_annot.pkl")
-    parser.add_argument('--data_path', type=str, default="./data/val")
+    parser.add_argument('--annot_path', type=str, default="../data/aflw_val/annot.pkl")
+    parser.add_argument('--data_path', type=str, default="../data/aflw_val")
     # parser.add_argument('--type', type=str, default="val")
     args = parser.parse_args()
 
